@@ -2,11 +2,6 @@ package com.example.myapplication.data.remote
 
 import com.example.myapplication.data.model.PracticeCategory
 
-private const val FEW_SHOT_EXAMPLE = """
-Example item:
-{"korean_hint": "나는 좋아한다 / 산책하는 것을 / 왜냐하면 / 그것이 나를 편안하게 해주기 때문에", "english_sentence": "I like taking walks because it makes me feel relaxed."}
-"""
-
 fun buildSetPrompt(
     category: PracticeCategory,
     alreadyAskedQuestions: List<String>,
@@ -35,7 +30,8 @@ fun buildSetPrompt(
           This is NOT natural Korean; it is a literal, English-ordered gloss meant to help the
           learner rehearse English word order.
 
-        $FEW_SHOT_EXAMPLE
+        Example item:
+        {"korean_hint": "나는 좋아한다 / 산책하는 것을 / 왜냐하면 / 그것이 나를 편안하게 해주기 때문에", "english_sentence": "I like taking walks because it makes me feel relaxed."}
 
         Do not repeat any of these questions already used in this session:
         $avoidSection
