@@ -937,6 +937,7 @@ package com.example.myapplication.data.remote
 
 import com.example.myapplication.data.model.PracticeCategory
 import com.example.myapplication.data.model.PracticeQuestion
+import kotlinx.coroutines.CancellationException
 
 interface PracticeRepository {
     suspend fun generateSet(
@@ -956,13 +957,26 @@ class ClaudePracticeRepository(
         category: PracticeCategory,
         alreadyAskedQuestions: List<String>,
         questionCount: Int
-    ): Result<List<PracticeQuestion>> = runCatching {
-        val prompt = buildSetPrompt(category, alreadyAskedQuestions, questionCount)
-        val rawResponse = sender.sendPrompt(apiKey, prompt)
-        parsePracticeSet(rawResponse, category)
+    ): Result<List<PracticeQuestion>> {
+        return try {
+            val prompt = buildSetPrompt(category, alreadyAskedQuestions, questionCount)
+            val rawResponse = sender.sendPrompt(apiKey, prompt)
+            Result.success(parsePracticeSet(rawResponse, category))
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 }
 ```
+
+Note: a plain `runCatching { ... }` around the suspend call to `sender.sendPrompt` would also catch
+`kotlinx.coroutines.CancellationException`, silently turning a cancelled coroutine (e.g. a ViewModel
+clearing mid-request) into an ordinary `Result.failure` instead of letting cancellation propagate —
+breaking structured concurrency. The explicit `try/catch` above rethrows `CancellationException` before
+the general `catch (e: Exception)` branch (catch-block ordering matters here, since `CancellationException`
+is itself an `Exception` subtype).
 
 - [ ] **Step 4: Run the test to verify it passes**
 
