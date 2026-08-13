@@ -1098,7 +1098,7 @@ class FavoriteDaoTest {
 
 - [ ] **Step 2: Run the test to verify it fails**
 
-Run: `./gradlew :app:connectedDebugAndroidTest --tests "com.example.myapplication.data.local.FavoriteDaoTest"`
+Run: `./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.myapplication.data.local.FavoriteDaoTest`
 Expected: FAIL (compilation error — `AppDatabase`, `FavoriteRepository`, `FavoriteDao` are unresolved). Requires a connected emulator/device.
 
 - [ ] **Step 3: Implement the entity**
@@ -1244,7 +1244,7 @@ class FakeFavoriteDao : FavoriteDao {
 
 - [ ] **Step 8: Run the test to verify it passes**
 
-Run: `./gradlew :app:connectedDebugAndroidTest --tests "com.example.myapplication.data.local.FavoriteDaoTest"`
+Run: `./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.myapplication.data.local.FavoriteDaoTest`
 Expected: PASS (4 tests) on a connected emulator/device.
 
 - [ ] **Step 9: Commit**
@@ -1325,7 +1325,7 @@ class EncryptedApiKeyStoreTest {
 
 - [ ] **Step 2: Run the test to verify it fails**
 
-Run: `./gradlew :app:connectedDebugAndroidTest --tests "com.example.myapplication.data.settings.EncryptedApiKeyStoreTest"`
+Run: `./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.myapplication.data.settings.EncryptedApiKeyStoreTest`
 Expected: FAIL (compilation error — `EncryptedApiKeyStore` is unresolved).
 
 - [ ] **Step 3: Implement `ApiKeyStore`**
@@ -1384,7 +1384,7 @@ class EncryptedApiKeyStore(context: Context) : ApiKeyStore {
 
 - [ ] **Step 5: Run the test to verify it passes**
 
-Run: `./gradlew :app:connectedDebugAndroidTest --tests "com.example.myapplication.data.settings.EncryptedApiKeyStoreTest"`
+Run: `./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.myapplication.data.settings.EncryptedApiKeyStoreTest`
 Expected: PASS (3 tests)
 
 - [ ] **Step 6: Commit**
@@ -1445,7 +1445,7 @@ class AndroidSpeechPlayerTest {
 
 - [ ] **Step 2: Run the test to verify it fails**
 
-Run: `./gradlew :app:connectedDebugAndroidTest --tests "com.example.myapplication.audio.AndroidSpeechPlayerTest"`
+Run: `./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.myapplication.audio.AndroidSpeechPlayerTest`
 Expected: FAIL (compilation error — `AndroidSpeechPlayer` is unresolved).
 
 - [ ] **Step 3: Implement `SpeechPlayer`**
@@ -1498,7 +1498,7 @@ class AndroidSpeechPlayer(context: Context) : SpeechPlayer {
 
 - [ ] **Step 5: Run the test to verify it passes**
 
-Run: `./gradlew :app:connectedDebugAndroidTest --tests "com.example.myapplication.audio.AndroidSpeechPlayerTest"`
+Run: `./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.myapplication.audio.AndroidSpeechPlayerTest`
 Expected: PASS (2 tests)
 
 - [ ] **Step 6: Commit**
@@ -1585,7 +1585,7 @@ class VoiceRecorderPlaybackTest {
 
 - [ ] **Step 2: Run the test to verify it fails**
 
-Run: `./gradlew :app:connectedDebugAndroidTest --tests "com.example.myapplication.audio.VoiceRecorderPlaybackTest"`
+Run: `./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.myapplication.audio.VoiceRecorderPlaybackTest`
 Expected: FAIL (compilation error — `MediaRecorderVoiceRecorder` and `MediaPlayerVoicePlayer` are unresolved).
 
 - [ ] **Step 3: Implement the interfaces**
@@ -1708,7 +1708,7 @@ class MediaPlayerVoicePlayer : VoicePlayer {
 
 - [ ] **Step 6: Run the test to verify it passes**
 
-Run: `./gradlew :app:connectedDebugAndroidTest --tests "com.example.myapplication.audio.VoiceRecorderPlaybackTest"`
+Run: `./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.myapplication.audio.VoiceRecorderPlaybackTest`
 Expected: PASS (2 tests)
 
 - [ ] **Step 7: Commit**
@@ -2432,7 +2432,7 @@ class HomeScreenTest {
 
 - [ ] **Step 2: Run the test to verify it fails**
 
-Run: `./gradlew :app:connectedDebugAndroidTest --tests "com.example.myapplication.ui.home.HomeScreenTest"`
+Run: `./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.myapplication.ui.home.HomeScreenTest`
 Expected: FAIL (compilation error — `HomeScreen` is unresolved).
 
 - [ ] **Step 3: Implement `HomeScreen`**
@@ -2493,7 +2493,7 @@ fun HomeScreen(
 
 - [ ] **Step 4: Run the test to verify it passes**
 
-Run: `./gradlew :app:connectedDebugAndroidTest --tests "com.example.myapplication.ui.home.HomeScreenTest"`
+Run: `./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.myapplication.ui.home.HomeScreenTest`
 Expected: PASS (2 tests)
 
 - [ ] **Step 5: Commit**
@@ -2560,7 +2560,7 @@ class SettingsScreenTest {
 
 - [ ] **Step 2: Run the test to verify it fails**
 
-Run: `./gradlew :app:connectedDebugAndroidTest --tests "com.example.myapplication.ui.settings.SettingsScreenTest"`
+Run: `./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.myapplication.ui.settings.SettingsScreenTest`
 Expected: FAIL (compilation error — `SettingsScreen` is unresolved).
 
 - [ ] **Step 3: Implement `SettingsScreen`**
@@ -2619,7 +2619,7 @@ fun SettingsScreen(
 
 - [ ] **Step 4: Run the test to verify it passes**
 
-Run: `./gradlew :app:connectedDebugAndroidTest --tests "com.example.myapplication.ui.settings.SettingsScreenTest"`
+Run: `./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.myapplication.ui.settings.SettingsScreenTest`
 Expected: PASS (1 test)
 
 - [ ] **Step 5: Commit**
@@ -2806,7 +2806,7 @@ class SetCompleteScreenTest {
 
 - [ ] **Step 2: Run the tests to verify they fail**
 
-Run: `./gradlew :app:connectedDebugAndroidTest --tests "com.example.myapplication.ui.set.PracticeScreenTest" --tests "com.example.myapplication.ui.set.SetCompleteScreenTest"`
+Run: `./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.myapplication.ui.set.PracticeScreenTest,com.example.myapplication.ui.set.SetCompleteScreenTest`
 Expected: FAIL (compilation error — `PracticeScreen` and `SetCompleteScreen` are unresolved).
 
 - [ ] **Step 3: Implement `PracticeScreen`**
@@ -2930,7 +2930,7 @@ fun SetCompleteScreen(
 
 - [ ] **Step 5: Run the tests to verify they pass**
 
-Run: `./gradlew :app:connectedDebugAndroidTest --tests "com.example.myapplication.ui.set.PracticeScreenTest" --tests "com.example.myapplication.ui.set.SetCompleteScreenTest"`
+Run: `./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.myapplication.ui.set.PracticeScreenTest,com.example.myapplication.ui.set.SetCompleteScreenTest`
 Expected: PASS (3 tests)
 
 - [ ] **Step 6: Commit**
@@ -3017,7 +3017,7 @@ class FavoritesScreenTest {
 
 - [ ] **Step 2: Run the test to verify it fails**
 
-Run: `./gradlew :app:connectedDebugAndroidTest --tests "com.example.myapplication.ui.favorites.FavoritesScreenTest"`
+Run: `./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.myapplication.ui.favorites.FavoritesScreenTest`
 Expected: FAIL (compilation error — `FavoritesScreen` is unresolved).
 
 - [ ] **Step 3: Implement `FavoritesScreen`**
@@ -3070,7 +3070,7 @@ fun FavoritesScreen(
 
 - [ ] **Step 4: Run the test to verify it passes**
 
-Run: `./gradlew :app:connectedDebugAndroidTest --tests "com.example.myapplication.ui.favorites.FavoritesScreenTest"`
+Run: `./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.myapplication.ui.favorites.FavoritesScreenTest`
 Expected: PASS (1 test)
 
 - [ ] **Step 5: Commit**
@@ -3123,7 +3123,7 @@ class MainActivityTest {
 
 - [ ] **Step 2: Run the test to verify it fails**
 
-Run: `./gradlew :app:connectedDebugAndroidTest --tests "com.example.myapplication.MainActivityTest"`
+Run: `./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.myapplication.MainActivityTest`
 Expected: FAIL (`MainActivity` still renders the old "Hello Android" screen, so the title text is not found).
 
 - [ ] **Step 3: Implement `Routes`**
@@ -3351,7 +3351,7 @@ class MainActivity : ComponentActivity() {
 
 - [ ] **Step 8: Run the test to verify it passes**
 
-Run: `./gradlew :app:connectedDebugAndroidTest --tests "com.example.myapplication.MainActivityTest"`
+Run: `./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.myapplication.MainActivityTest`
 Expected: PASS (1 test)
 
 - [ ] **Step 9: Run the full test suite**
