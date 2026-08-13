@@ -668,7 +668,7 @@ class ClaudeApiClientTest {
 
     @After
     fun tearDown() {
-        server.shutdown()
+        server.close()
     }
 
     @Test
@@ -689,7 +689,7 @@ class ClaudeApiClientTest {
 
         val recorded = server.takeRequest()
         assertEquals("secret-key", recorded.headers["x-api-key"])
-        assertTrue(recorded.body.utf8().contains("hello prompt"))
+        assertTrue(recorded.body?.utf8().orEmpty().contains("hello prompt"))
     }
 
     @Test
