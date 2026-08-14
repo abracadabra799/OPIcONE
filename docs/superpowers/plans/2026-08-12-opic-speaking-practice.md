@@ -2530,7 +2530,6 @@ git commit -m "Add HomeScreen with category list"
 ```kotlin
 package com.example.myapplication.ui.settings
 
-import androidx.compose.ui.test.assertExists
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -2660,7 +2659,6 @@ git commit -m "Add SettingsScreen for API key entry"
 ```kotlin
 package com.example.myapplication.ui.set
 
-import androidx.compose.ui.test.assertExists
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -2786,7 +2784,6 @@ class PracticeScreenTest {
 ```kotlin
 package com.example.myapplication.ui.set
 
-import androidx.compose.ui.test.assertExists
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -2973,7 +2970,6 @@ git commit -m "Add PracticeScreen and SetCompleteScreen"
 ```kotlin
 package com.example.myapplication.ui.favorites
 
-import androidx.compose.ui.test.assertExists
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
@@ -3119,7 +3115,6 @@ git commit -m "Add FavoritesScreen"
 ```kotlin
 package com.example.myapplication
 
-import androidx.compose.ui.test.assertExists
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import org.junit.Rule
