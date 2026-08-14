@@ -1661,12 +1661,18 @@ class MediaRecorderVoiceRecorder(
     }
 
     override fun stopRecording() {
-        recorder?.apply {
-            stop()
-            release()
-        }
+        val activeRecorder = recorder
         recorder = null
         recording = false
+        try {
+            activeRecorder?.stop()
+        } catch (e: RuntimeException) {
+            // stop() throws if too little data was recorded (e.g. instant tap-release) — the
+            // output file may be invalid/empty in this case, which callers should already
+            // tolerate, but the recorder must still be released and state must still reset.
+        } finally {
+            activeRecorder?.release()
+        }
     }
 
     override fun isRecording(): Boolean = recording
