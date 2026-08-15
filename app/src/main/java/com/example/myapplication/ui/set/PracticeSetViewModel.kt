@@ -42,7 +42,6 @@ class PracticeSetViewModel(
                 return@launch
             }
             practiceRepository.generateSet(
-                apiKey = apiKey,
                 category = category,
                 alreadyAskedQuestions = emptyList()
             ).onSuccess { questions ->
