@@ -7,10 +7,13 @@ class FavoriteRepository(private val dao: FavoriteDao) {
 
     fun observeFavorites(): Flow<List<FavoriteSentence>> = dao.observeAll()
 
+    suspend fun getFavorite(id: Long): FavoriteSentence? = dao.findById(id)
+
     suspend fun addFavorite(question: PracticeQuestion) {
         dao.insert(
             FavoriteSentence(
                 category = question.category.name,
+                opicQuestion = question.opicQuestion,
                 koreanHint = question.koreanHint,
                 englishSentence = question.englishSentence,
                 createdAt = System.currentTimeMillis()

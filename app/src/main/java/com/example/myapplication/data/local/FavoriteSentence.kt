@@ -7,6 +7,7 @@ import androidx.room.PrimaryKey
 data class FavoriteSentence(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val category: String,
+    val opicQuestion: String? = null,
     val koreanHint: String,
     val englishSentence: String,
     val createdAt: Long

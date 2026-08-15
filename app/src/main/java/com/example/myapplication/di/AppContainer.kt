@@ -10,6 +10,7 @@ import com.example.myapplication.audio.VoicePlayer
 import com.example.myapplication.audio.VoiceRecorder
 import com.example.myapplication.data.local.AppDatabase
 import com.example.myapplication.data.local.FavoriteRepository
+import com.example.myapplication.data.local.MIGRATION_1_2
 import com.example.myapplication.data.remote.ClaudeApiClient
 import com.example.myapplication.data.remote.DefaultPracticeRepository
 import com.example.myapplication.data.remote.OpenAiApiClient
@@ -27,7 +28,7 @@ class AppContainer(context: Context) {
         appContext,
         AppDatabase::class.java,
         "opic_practice.db"
-    ).build()
+    ).addMigrations(MIGRATION_1_2).build()
 
     val favoriteRepository = FavoriteRepository(database.favoriteDao())
 

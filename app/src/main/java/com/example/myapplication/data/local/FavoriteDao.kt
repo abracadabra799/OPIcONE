@@ -20,6 +20,9 @@ interface FavoriteDao {
     @Query("SELECT * FROM favorite_sentences ORDER BY createdAt DESC")
     fun observeAll(): Flow<List<FavoriteSentence>>
 
+    @Query("SELECT * FROM favorite_sentences WHERE id = :id LIMIT 1")
+    suspend fun findById(id: Long): FavoriteSentence?
+
     @Query("SELECT EXISTS(SELECT 1 FROM favorite_sentences WHERE englishSentence = :englishSentence)")
     suspend fun isFavorite(englishSentence: String): Boolean
 }

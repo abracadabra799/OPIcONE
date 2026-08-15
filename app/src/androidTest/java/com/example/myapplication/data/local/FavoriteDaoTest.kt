@@ -19,6 +19,7 @@ import org.junit.runner.RunWith
 class FavoriteDaoTest {
 
     private lateinit var database: AppDatabase
+    private lateinit var dao: FavoriteDao
     private lateinit var repository: FavoriteRepository
 
     private val sampleQuestion = PracticeQuestion(
@@ -34,7 +35,8 @@ class FavoriteDaoTest {
             ApplicationProvider.getApplicationContext(),
             AppDatabase::class.java
         ).build()
-        repository = FavoriteRepository(database.favoriteDao())
+        dao = database.favoriteDao()
+        repository = FavoriteRepository(dao)
     }
 
     @After
@@ -49,7 +51,26 @@ class FavoriteDaoTest {
         val favorites = repository.observeFavorites().first()
 
         assertEquals(1, favorites.size)
+        assertEquals("Tell me about your home.", favorites[0].opicQuestion)
         assertEquals("I live in Seoul.", favorites[0].englishSentence)
+    }
+
+    @Test
+    fun insert_thenFindById_roundTripsQuestion() = runBlocking {
+        val id = dao.insert(
+            FavoriteSentence(
+                category = PracticeCategory.HOUSING.name,
+                opicQuestion = "Tell me about your home.",
+                koreanHint = "힌트",
+                englishSentence = "Answer.",
+                createdAt = 1
+            )
+        )
+
+        val favorite = dao.findById(id)
+
+        assertEquals("Tell me about your home.", favorite?.opicQuestion)
+        assertEquals("Answer.", favorite?.englishSentence)
     }
 
     @Test

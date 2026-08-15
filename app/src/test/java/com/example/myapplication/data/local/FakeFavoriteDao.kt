@@ -23,6 +23,9 @@ class FakeFavoriteDao : FavoriteDao {
 
     override fun observeAll() = favorites
 
+    override suspend fun findById(id: Long): FavoriteSentence? =
+        favorites.value.firstOrNull { it.id == id }
+
     override suspend fun isFavorite(englishSentence: String): Boolean =
         favorites.value.any { it.englishSentence == englishSentence }
 }
