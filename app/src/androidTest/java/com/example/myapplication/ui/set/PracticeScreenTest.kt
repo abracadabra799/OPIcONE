@@ -74,7 +74,12 @@ class PracticeScreenTest {
         result: Result<List<PracticeQuestion>>? = null
     ): PracticeSetViewModel {
         val questions = (1..questionCount).map {
-            PracticeQuestion("힌트$it", "Sentence $it.", PracticeCategory.HOBBY)
+            PracticeQuestion(
+                opicQuestion = "Tell me about item $it.",
+                koreanHint = "힌트$it",
+                englishSentence = "Sentence $it.",
+                category = PracticeCategory.HOBBY
+            )
         }
         return PracticeSetViewModel(
             category = PracticeCategory.HOBBY,

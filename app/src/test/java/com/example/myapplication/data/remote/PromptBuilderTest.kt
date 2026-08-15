@@ -39,4 +39,13 @@ class PromptBuilderTest {
         assertTrue(prompt.contains("korean_hint"))
         assertTrue(prompt.contains("english_sentence"))
     }
+
+    @Test
+    fun `prompt requires exact three-field shape`() {
+        val prompt = buildSetPrompt(PracticeCategory.HOUSING, emptyList(), 1)
+
+        assertTrue(prompt.contains("\"opic_question\""))
+        assertTrue(prompt.contains("\"korean_hint\""))
+        assertTrue(prompt.contains("\"english_sentence\""))
+    }
 }

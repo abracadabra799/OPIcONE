@@ -29,8 +29,18 @@ class PracticeCategoryTest {
 
     @Test
     fun `practice questions with identical fields are equal`() {
-        val a = PracticeQuestion("힌트", "sentence", PracticeCategory.HOBBY)
-        val b = PracticeQuestion("힌트", "sentence", PracticeCategory.HOBBY)
+        val a = PracticeQuestion(
+            opicQuestion = "Tell me about your hobby.",
+            koreanHint = "힌트",
+            englishSentence = "sentence",
+            category = PracticeCategory.HOBBY
+        )
+        val b = PracticeQuestion(
+            opicQuestion = "Tell me about your hobby.",
+            koreanHint = "힌트",
+            englishSentence = "sentence",
+            category = PracticeCategory.HOBBY
+        )
 
         assertEquals(a, b)
     }

@@ -39,7 +39,12 @@ class FavoritesScreenTest {
     @Test
     fun deletingAFavorite_removesItFromTheList() = runBlocking {
         val repository = FavoriteRepository(database.favoriteDao())
-        repository.addFavorite(PracticeQuestion("힌트", "I live in Seoul.", PracticeCategory.HOUSING))
+        repository.addFavorite(PracticeQuestion(
+            opicQuestion = "Tell me about your home.",
+            koreanHint = "힌트",
+            englishSentence = "I live in Seoul.",
+            category = PracticeCategory.HOUSING
+        ))
         val viewModel = FavoritesViewModel(repository)
 
         composeTestRule.setContent {

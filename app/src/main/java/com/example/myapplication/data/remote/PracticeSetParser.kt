@@ -8,19 +8,20 @@ import kotlinx.serialization.json.Json
 
 @Serializable
 private data class PracticeQuestionDto(
+    val opic_question: String,
     val korean_hint: String,
     val english_sentence: String
 )
 
-class PracticeSetParseException(message: String, cause: Throwable? = null) : Exception(message, cause)
+class PracticeSetParseException(message: String) : Exception(message)
 
 private val json = Json { ignoreUnknownKeys = true }
 
 fun parsePracticeSet(rawJson: String, category: PracticeCategory): List<PracticeQuestion> {
     val dtos = try {
         json.decodeFromString<List<PracticeQuestionDto>>(rawJson.trim())
-    } catch (e: Exception) {
-        throw PracticeSetParseException("Could not parse practice set JSON", e)
+    } catch (_: Exception) {
+        throw PracticeSetParseException("Could not parse practice set JSON")
     }
 
     if (dtos.isEmpty()) {
@@ -28,12 +29,16 @@ fun parsePracticeSet(rawJson: String, category: PracticeCategory): List<Practice
     }
 
     return dtos.map { dto ->
-        if (dto.korean_hint.isBlank() || dto.english_sentence.isBlank()) {
+        val opicQuestion = dto.opic_question.trim()
+        val koreanHint = dto.korean_hint.trim()
+        val englishSentence = dto.english_sentence.trim()
+        if (opicQuestion.isBlank() || koreanHint.isBlank() || englishSentence.isBlank()) {
             throw PracticeSetParseException("Practice set item had a blank field")
         }
         PracticeQuestion(
-            koreanHint = dto.korean_hint,
-            englishSentence = dto.english_sentence,
+            opicQuestion = opicQuestion,
+            koreanHint = koreanHint,
+            englishSentence = englishSentence,
             category = category
         )
     }

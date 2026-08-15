@@ -31,12 +31,12 @@ fun buildSetPrompt(
         "  learner rehearse English word order.",
         "",
         "Example item:",
-        "{\"korean_hint\": \"나는 좋아한다 / 산책하는 것을 / 왜냐하면 / 그것이 나를 편안하게 해주기 때문에\", \"english_sentence\": \"I like taking walks because it makes me feel relaxed.\"}",
+        "{\"opic_question\": \"What do you enjoy doing in your free time?\", \"korean_hint\": \"나는 좋아한다 / 산책하는 것을 / 왜냐하면 / 그것이 나를 편안하게 해주기 때문에\", \"english_sentence\": \"I like taking walks because it makes me feel relaxed.\"}",
         "",
         "Do not repeat any of these questions already used in this session:",
         avoidSection,
         "",
         "Respond with ONLY a JSON array (no surrounding text) of exactly $questionCount objects,",
-        "each shaped like: {\"korean_hint\": string, \"english_sentence\": string}"
+        "each shaped like: {\"opic_question\": string, \"korean_hint\": string, \"english_sentence\": string}"
     ).joinToString(separator = "\n")
 }

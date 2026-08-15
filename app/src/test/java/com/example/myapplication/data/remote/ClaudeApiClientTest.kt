@@ -39,12 +39,15 @@ class ClaudeApiClientTest {
 
     @Test
     fun `returns text content from a successful response`() = runTest {
-        val body = """{"content":[{"type":"text","text":"[{\"korean_hint\":\"h\",\"english_sentence\":\"e\"}]"}]}"""
+        val body = """{"content":[{"type":"text","text":"[{\"opic_question\":\"Tell me about your home.\",\"korean_hint\":\"나는 산다 / 서울에\",\"english_sentence\":\"I live in Seoul.\"}]"}]}"""
         server.enqueue(MockResponse(body = body))
 
         val result = client.generate(apiKey = "test-key", prompt = "prompt")
 
-        assertEquals("[{\"korean_hint\":\"h\",\"english_sentence\":\"e\"}]", result)
+        assertEquals(
+            "[{\"opic_question\":\"Tell me about your home.\",\"korean_hint\":\"나는 산다 / 서울에\",\"english_sentence\":\"I live in Seoul.\"}]",
+            result
+        )
     }
 
     @Test

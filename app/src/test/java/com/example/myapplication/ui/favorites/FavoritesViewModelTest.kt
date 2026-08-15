@@ -20,7 +20,12 @@ class FavoritesViewModelTest {
     @Test
     fun `favorites reflects what is stored in the repository`() = runTest {
         val repository = FavoriteRepository(FakeFavoriteDao())
-        repository.addFavorite(PracticeQuestion("힌트", "I live in Seoul.", PracticeCategory.HOUSING))
+        repository.addFavorite(PracticeQuestion(
+            opicQuestion = "Tell me about your home.",
+            koreanHint = "힌트",
+            englishSentence = "I live in Seoul.",
+            category = PracticeCategory.HOUSING
+        ))
         val viewModel = FavoritesViewModel(repository)
 
         advanceUntilIdle()
@@ -32,7 +37,12 @@ class FavoritesViewModelTest {
     @Test
     fun `removeFavorite deletes the item from the repository`() = runTest {
         val repository = FavoriteRepository(FakeFavoriteDao())
-        repository.addFavorite(PracticeQuestion("힌트", "I live in Seoul.", PracticeCategory.HOUSING))
+        repository.addFavorite(PracticeQuestion(
+            opicQuestion = "Tell me about your home.",
+            koreanHint = "힌트",
+            englishSentence = "I live in Seoul.",
+            category = PracticeCategory.HOUSING
+        ))
         val viewModel = FavoritesViewModel(repository)
         advanceUntilIdle()
         val stored = viewModel.favorites.value.first()

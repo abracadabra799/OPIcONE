@@ -22,6 +22,7 @@ class FavoriteDaoTest {
     private lateinit var repository: FavoriteRepository
 
     private val sampleQuestion = PracticeQuestion(
+        opicQuestion = "Tell me about your home.",
         koreanHint = "나는 산다 / 서울에",
         englishSentence = "I live in Seoul.",
         category = PracticeCategory.HOUSING

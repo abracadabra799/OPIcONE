@@ -26,8 +26,18 @@ import org.junit.Rule
 import org.junit.Test
 import java.io.File
 
-private val QUESTION_1 = PracticeQuestion("힌트1", "Sentence one.", PracticeCategory.HOBBY)
-private val QUESTION_2 = PracticeQuestion("힌트2", "Sentence two.", PracticeCategory.HOBBY)
+private val QUESTION_1 = PracticeQuestion(
+    opicQuestion = "Tell me about item 1.",
+    koreanHint = "힌트1",
+    englishSentence = "Sentence one.",
+    category = PracticeCategory.HOBBY
+)
+private val QUESTION_2 = PracticeQuestion(
+    opicQuestion = "Tell me about item 2.",
+    koreanHint = "힌트2",
+    englishSentence = "Sentence two.",
+    category = PracticeCategory.HOBBY
+)
 
 private class FakePracticeRepository(
     private val result: Result<List<PracticeQuestion>>

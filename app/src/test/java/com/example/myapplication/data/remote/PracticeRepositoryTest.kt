@@ -48,7 +48,7 @@ private class FakeProvider(
 class PracticeRepositoryTest {
 
     private val validResponseJson = """
-        [{"korean_hint": "나는 산다 / 서울에", "english_sentence": "I live in Seoul."}]
+        [{"opic_question": "Tell me about your home.", "korean_hint": "나는 산다 / 서울에", "english_sentence": "I live in Seoul."}]
     """.trimIndent()
 
     private fun repository(
