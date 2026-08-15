@@ -1,6 +1,16 @@
 package com.example.myapplication.ui.navigation
 
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -36,6 +46,7 @@ fun AppNavGraph(appContainer: AppContainer) {
             route = Routes.Practice.route,
             arguments = listOf(navArgument("category") { type = NavType.StringType })
         ) { backStackEntry ->
+            val context = LocalContext.current
             val categoryName = backStackEntry.arguments?.getString("category")
                 ?: PracticeCategory.SELF_INTRODUCTION.name
             val category = PracticeCategory.valueOf(categoryName)
@@ -53,6 +64,22 @@ fun AppNavGraph(appContainer: AppContainer) {
                     )
                 }
             )
+            var canRecordAudio by remember {
+                mutableStateOf(
+                    ContextCompat.checkSelfPermission(
+                        context,
+                        Manifest.permission.RECORD_AUDIO
+                    ) == PackageManager.PERMISSION_GRANTED
+                )
+            }
+            var recordAudioPermissionDenied by remember { mutableStateOf(false) }
+            val recordAudioPermissionLauncher = rememberLauncherForActivityResult(
+                contract = ActivityResultContracts.RequestPermission()
+            ) { granted ->
+                canRecordAudio = granted
+                recordAudioPermissionDenied = !granted
+                if (granted) viewModel.startRecording()
+            }
             PracticeScreen(
                 viewModel = viewModel,
                 onSetComplete = { questionCount ->
@@ -60,7 +87,12 @@ fun AppNavGraph(appContainer: AppContainer) {
                         popUpTo(Routes.Home.route)
                     }
                 },
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
+                canRecordAudio = canRecordAudio,
+                recordAudioPermissionDenied = recordAudioPermissionDenied,
+                onRequestRecordAudioPermission = {
+                    recordAudioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                }
             )
         }
         composable(

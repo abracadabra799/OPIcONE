@@ -26,7 +26,12 @@ class ClaudePracticeRepository(
         return try {
             val prompt = buildSetPrompt(category, alreadyAskedQuestions, questionCount)
             val rawResponse = sender.sendPrompt(apiKey, prompt)
-            Result.success(parsePracticeSet(rawResponse, category))
+            val questions = try {
+                parsePracticeSet(rawResponse, category)
+            } catch (_: PracticeSetParseException) {
+                parsePracticeSet(sender.sendPrompt(apiKey, prompt), category)
+            }
+            Result.success(questions)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {

@@ -15,6 +15,7 @@ import com.example.myapplication.data.model.PracticeQuestion
 import com.example.myapplication.data.remote.PracticeRepository
 import com.example.myapplication.data.settings.ApiKeyStore
 import org.junit.After
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -116,5 +117,45 @@ class PracticeScreenTest {
         composeTestRule.onNodeWithText("다음 문제").performClick()
 
         composeTestRule.waitUntil(timeoutMillis = 2_000) { completed }
+    }
+
+    @Test
+    fun tappingRecordWithoutPermission_requestsPermissionInsteadOfStartingRecorder() {
+        var permissionRequested = false
+        val viewModel = buildViewModel()
+        composeTestRule.setContent {
+            PracticeScreen(
+                viewModel = viewModel,
+                onSetComplete = {},
+                onBack = {},
+                canRecordAudio = false,
+                recordAudioPermissionDenied = false,
+                onRequestRecordAudioPermission = { permissionRequested = true }
+            )
+        }
+
+        composeTestRule.onNodeWithText("녹음 시작").performClick()
+
+        assertTrue(permissionRequested)
+        composeTestRule.onNodeWithText("녹음 시작").assertExists()
+    }
+
+    @Test
+    fun deniedPermission_keepsModelSentenceAvailableWithoutRecording() {
+        val viewModel = buildViewModel(questionCount = 1)
+        composeTestRule.setContent {
+            PracticeScreen(
+                viewModel = viewModel,
+                onSetComplete = {},
+                onBack = {},
+                canRecordAudio = false,
+                recordAudioPermissionDenied = true,
+                onRequestRecordAudioPermission = {}
+            )
+        }
+
+        composeTestRule.onNodeWithText("마이크 권한 없이 모범 문장으로 연습할 수 있습니다.").assertExists()
+        composeTestRule.onNodeWithText("Sentence 1.").assertExists()
+        composeTestRule.onNodeWithText("모범 문장 듣기").assertExists()
     }
 }

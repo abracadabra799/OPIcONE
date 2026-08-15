@@ -20,6 +20,9 @@ fun PracticeScreen(
     viewModel: PracticeSetViewModel,
     onSetComplete: (Int) -> Unit,
     onBack: () -> Unit,
+    canRecordAudio: Boolean = true,
+    recordAudioPermissionDenied: Boolean = false,
+    onRequestRecordAudioPermission: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -39,7 +42,13 @@ fun PracticeScreen(
                     if (state.isSetComplete) {
                         LaunchedEffect(Unit) { onSetComplete(state.questions.size) }
                     } else {
-                        PracticeReadyContent(state = state, viewModel = viewModel)
+                        PracticeReadyContent(
+                            state = state,
+                            viewModel = viewModel,
+                            canRecordAudio = canRecordAudio,
+                            recordAudioPermissionDenied = recordAudioPermissionDenied,
+                            onRequestRecordAudioPermission = onRequestRecordAudioPermission
+                        )
                     }
                 }
             }
@@ -50,7 +59,10 @@ fun PracticeScreen(
 @Composable
 private fun PracticeReadyContent(
     state: PracticeSetUiState.Ready,
-    viewModel: PracticeSetViewModel
+    viewModel: PracticeSetViewModel,
+    canRecordAudio: Boolean,
+    recordAudioPermissionDenied: Boolean,
+    onRequestRecordAudioPermission: () -> Unit
 ) {
     val question = state.questions[state.currentIndex]
 
@@ -58,13 +70,24 @@ private fun PracticeReadyContent(
     Text(question.koreanHint, modifier = Modifier.padding(vertical = 16.dp))
 
     Button(onClick = {
-        if (state.isRecording) viewModel.stopRecording() else viewModel.startRecording()
+        when {
+            state.isRecording -> viewModel.stopRecording()
+            canRecordAudio -> viewModel.startRecording()
+            else -> onRequestRecordAudioPermission()
+        }
     }) {
         Text(if (state.isRecording) "녹음 중지" else "녹음 시작")
     }
 
+    if (recordAudioPermissionDenied) {
+        Text("마이크 권한 없이 모범 문장으로 연습할 수 있습니다.")
+    }
+
     if (state.hasRecording) {
         Button(onClick = viewModel::playMyRecording) { Text("내 녹음 듣기") }
+    }
+
+    if (state.hasRecording || recordAudioPermissionDenied) {
         Button(onClick = viewModel::playModelSentence) { Text("모범 문장 듣기") }
         Text(question.englishSentence, modifier = Modifier.padding(vertical = 8.dp))
     }
