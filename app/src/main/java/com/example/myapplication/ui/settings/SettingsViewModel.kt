@@ -1,28 +1,48 @@
 package com.example.myapplication.ui.settings
 
 import androidx.lifecycle.ViewModel
-import com.example.myapplication.data.settings.ApiKeyStore
+import com.example.myapplication.data.remote.AiProvider
+import com.example.myapplication.data.settings.AiSettingsStore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 class SettingsViewModel(
-    private val apiKeyStore: ApiKeyStore
+    private val settingsStore: AiSettingsStore
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(
-        SettingsUiState(apiKeyInput = apiKeyStore.getApiKey().orEmpty())
-    )
+    private val initialProvider = settingsStore.getSelectedProvider()
+    private val _uiState = MutableStateFlow(stateFor(initialProvider))
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
 
-    fun onApiKeyChanged(newValue: String) {
-        _uiState.value = _uiState.value.copy(apiKeyInput = newValue, isSaved = false)
+    fun selectProvider(provider: AiProvider) {
+        settingsStore.setSelectedProvider(provider)
+        _uiState.value = stateFor(provider)
+    }
+
+    fun onApiKeyChanged(value: String) {
+        _uiState.value = _uiState.value.copy(apiKeyInput = value, savedProvider = null)
     }
 
     fun saveApiKey() {
-        val current = _uiState.value
-        if (current.apiKeyInput.isBlank()) return
-        apiKeyStore.setApiKey(current.apiKeyInput.trim())
-        _uiState.value = current.copy(isSaved = true)
+        val state = _uiState.value
+        val key = state.apiKeyInput.trim().takeIf(String::isNotBlank) ?: return
+        settingsStore.setApiKey(state.selectedProvider, key)
+        _uiState.value = state.copy(
+            apiKeyInput = "",
+            hasStoredKey = true,
+            savedProvider = state.selectedProvider
+        )
     }
+
+    fun clearApiKey() {
+        val provider = _uiState.value.selectedProvider
+        settingsStore.clearApiKey(provider)
+        _uiState.value = stateFor(provider)
+    }
+
+    private fun stateFor(provider: AiProvider) = SettingsUiState(
+        selectedProvider = provider,
+        hasStoredKey = !settingsStore.getApiKey(provider).isNullOrBlank()
+    )
 }

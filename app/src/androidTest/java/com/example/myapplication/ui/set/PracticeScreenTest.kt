@@ -25,7 +25,6 @@ private class FakePracticeRepository(
     private val result: Result<List<PracticeQuestion>>
 ) : PracticeRepository {
     override suspend fun generateSet(
-        apiKey: String,
         category: PracticeCategory,
         alreadyAskedQuestions: List<String>,
         questionCount: Int

@@ -1,18 +1,36 @@
 package com.example.myapplication.ui.settings
 
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
-import com.example.myapplication.data.settings.ApiKeyStore
+import com.example.myapplication.data.remote.AiProvider
+import com.example.myapplication.data.settings.AiSettingsStore
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 
-private class FakeApiKeyStore(private var key: String? = null) : ApiKeyStore {
-    override fun getApiKey(): String? = key
-    override fun setApiKey(apiKey: String) { key = apiKey }
-    override fun clearApiKey() { key = null }
+private class FakeAiSettingsStore(
+    private var selectedProvider: AiProvider = AiProvider.CLAUDE,
+    private val keys: MutableMap<AiProvider, String> = mutableMapOf()
+) : AiSettingsStore {
+    override fun getSelectedProvider(): AiProvider = selectedProvider
+
+    override fun setSelectedProvider(provider: AiProvider) {
+        selectedProvider = provider
+    }
+
+    override fun getApiKey(provider: AiProvider): String? = keys[provider]
+
+    override fun setApiKey(provider: AiProvider, apiKey: String) {
+        keys[provider] = apiKey
+    }
+
+    override fun clearApiKey(provider: AiProvider) {
+        keys.remove(provider)
+    }
 }
 
 class SettingsScreenTest {
@@ -21,15 +39,54 @@ class SettingsScreenTest {
     val composeTestRule = createComposeRule()
 
     @Test
-    fun enteringAKeyAndTappingSave_showsConfirmation() {
-        val viewModel = SettingsViewModel(FakeApiKeyStore())
+    fun changingProvider_clearsInputAndShowsRegisteredState() {
+        val store = FakeAiSettingsStore(
+            AiProvider.CLAUDE,
+            mutableMapOf(AiProvider.OPENAI to "secret")
+        )
+        val viewModel = SettingsViewModel(store)
         composeTestRule.setContent {
             SettingsScreen(viewModel = viewModel)
         }
 
-        composeTestRule.onNodeWithTag("apiKeyInput").performTextInput("sk-ant-test")
+        composeTestRule.onNodeWithTag("apiKeyInput").performTextInput("plaintext")
+        composeTestRule.onNodeWithTag("providerOpenAi").performClick()
+
+        composeTestRule.onNodeWithTag("apiKeyInput").assertTextEquals("")
+        composeTestRule.onNodeWithText("OpenAI API 키가 등록되어 있습니다.").assertExists()
+    }
+
+    @Test
+    fun savingOpenAiKey_showsProviderSpecificConfirmation() {
+        val viewModel = SettingsViewModel(FakeAiSettingsStore())
+        composeTestRule.setContent {
+            SettingsScreen(viewModel = viewModel)
+        }
+
+        composeTestRule.onNodeWithTag("providerOpenAi").performClick()
+        composeTestRule.onNodeWithTag("apiKeyInput").performTextInput("openai-key")
         composeTestRule.onNodeWithText("저장").performClick()
 
-        composeTestRule.onNodeWithText("저장되었습니다.").assertExists()
+        composeTestRule.onNodeWithText("OpenAI API 키를 저장했습니다.").assertExists()
+    }
+
+    @Test
+    fun deletingOpenAiKey_leavesClaudeKeyIntact() {
+        val store = FakeAiSettingsStore(
+            AiProvider.OPENAI,
+            mutableMapOf(
+                AiProvider.CLAUDE to "claude-key",
+                AiProvider.OPENAI to "openai-key"
+            )
+        )
+        val viewModel = SettingsViewModel(store)
+        composeTestRule.setContent {
+            SettingsScreen(viewModel = viewModel)
+        }
+
+        composeTestRule.onNodeWithTag("clearApiKey").performClick()
+
+        composeTestRule.onNodeWithText("OpenAI API 키가 등록되어 있지 않습니다.").assertExists()
+        assertEquals("claude-key", store.getApiKey(AiProvider.CLAUDE))
     }
 }

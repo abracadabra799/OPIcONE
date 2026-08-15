@@ -117,7 +117,7 @@ fun AppNavGraph(appContainer: AppContainer) {
         }
         composable(Routes.Settings.route) {
             val viewModel: SettingsViewModel = viewModel(
-                factory = SimpleViewModelFactory { SettingsViewModel(appContainer.apiKeyStore) }
+                factory = SimpleViewModelFactory { SettingsViewModel(appContainer.aiSettingsStore) }
             )
             SettingsScreen(viewModel = viewModel)
         }
