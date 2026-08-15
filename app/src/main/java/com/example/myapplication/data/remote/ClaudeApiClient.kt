@@ -57,8 +57,8 @@ class ClaudeApiClient(
                 if (!it.isSuccessful) throw ProviderFailure(provider, it.code)
                 val parsed = try {
                     json.decodeFromString<ClaudeResponseBody>(bodyText)
-                } catch (e: SerializationException) {
-                    throw InvalidProviderResponse(provider, e)
+                } catch (_: SerializationException) {
+                    throw InvalidProviderResponse(provider)
                 }
                 parsed.content.firstOrNull { block -> block.type == "text" }?.text
                     ?.takeIf(String::isNotBlank)

@@ -2,6 +2,9 @@ package com.example.myapplication.data.remote
 
 import java.io.IOException
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
 import okhttp3.Interceptor
@@ -35,16 +38,20 @@ class OpenAiApiClientTest {
     fun tearDown() = server.close()
 
     @Test
-    fun `sends bearer key fixed model and prompt`() = runTest {
+    fun `posts exact responses request shape`() = runTest {
         server.enqueue(MockResponse(body = SUCCESS_BODY))
 
         client.generate("openai-secret", "OPIc prompt")
 
         val request = server.takeRequest()
+        assertEquals("POST", request.method)
+        assertEquals("/v1/responses", request.url.encodedPath)
+        assertEquals("application/json; charset=utf-8", request.headers["Content-Type"])
         assertEquals("Bearer openai-secret", request.headers["Authorization"])
-        val body = request.body?.utf8().orEmpty()
-        assertTrue(body.contains("gpt-5.6-terra"))
-        assertTrue(body.contains("OPIc prompt"))
+        val body = Json.parseToJsonElement(request.body?.utf8().orEmpty()).jsonObject
+        assertEquals(setOf("model", "input"), body.keys)
+        assertEquals("gpt-5.6-terra", body.getValue("model").jsonPrimitive.content)
+        assertEquals("OPIc prompt", body.getValue("input").jsonPrimitive.content)
     }
 
     @Test

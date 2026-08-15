@@ -60,6 +60,17 @@ class SettingsViewModelTest {
     }
 
     @Test
+    fun `selecting current provider preserves unsaved input`() {
+        val store = FakeAiSettingsStore(AiProvider.OPENAI)
+        val viewModel = SettingsViewModel(store)
+        viewModel.onApiKeyChanged("unsaved openai key")
+
+        viewModel.selectProvider(AiProvider.OPENAI)
+
+        assertEquals("unsaved openai key", viewModel.uiState.value.apiKeyInput)
+    }
+
+    @Test
     fun `save trims key only for selected provider and clears input`() {
         val store = FakeAiSettingsStore(AiProvider.OPENAI)
         val viewModel = SettingsViewModel(store)

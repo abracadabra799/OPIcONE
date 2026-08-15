@@ -16,6 +16,7 @@ class SettingsViewModel(
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
 
     fun selectProvider(provider: AiProvider) {
+        if (provider == _uiState.value.selectedProvider) return
         settingsStore.setSelectedProvider(provider)
         _uiState.value = stateFor(provider)
     }

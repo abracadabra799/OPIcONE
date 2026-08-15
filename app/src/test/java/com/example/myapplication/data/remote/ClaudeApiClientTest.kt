@@ -81,12 +81,17 @@ class ClaudeApiClientTest {
     }
 
     @Test
-    fun `maps malformed success body to invalid provider response`() = runTest {
-        server.enqueue(MockResponse(body = "not-json"))
+    fun `maps malformed success body without retaining response content in cause chain`() = runTest {
+        val responseSentinel = "claude-secret-response-sentinel"
+        server.enqueue(MockResponse(body = responseSentinel))
 
-        assertTrue(
-            runCatching { client.generate("key", "prompt") }.exceptionOrNull() is InvalidProviderResponse
-        )
+        val error = runCatching { client.generate("key", "prompt") }.exceptionOrNull()
+
+        assertTrue(error is InvalidProviderResponse)
+        val causeChainText = generateSequence(error) { it.cause }
+            .joinToString("\n") { it.message.orEmpty() }
+        assertFalse(causeChainText.contains(responseSentinel))
+        assertTrue(error?.cause == null)
     }
 
     @Test

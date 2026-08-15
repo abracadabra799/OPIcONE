@@ -1,11 +1,14 @@
 package com.example.myapplication.ui.settings
 
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertTextEquals
+import androidx.compose.ui.test.hasImeAction
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.text.input.ImeAction
 import com.example.myapplication.data.remote.AiProvider
 import com.example.myapplication.data.settings.AiSettingsStore
 import org.junit.Assert.assertEquals
@@ -37,6 +40,15 @@ class SettingsScreenTest {
 
     @get:Rule
     val composeTestRule = createComposeRule()
+
+    @Test
+    fun apiKeyInput_hasSingleLineImeAction() {
+        composeTestRule.setContent {
+            SettingsScreen(viewModel = SettingsViewModel(FakeAiSettingsStore()))
+        }
+
+        composeTestRule.onNodeWithTag("apiKeyInput").assert(hasImeAction(ImeAction.Done))
+    }
 
     @Test
     fun changingProvider_clearsInputAndShowsRegisteredState() {

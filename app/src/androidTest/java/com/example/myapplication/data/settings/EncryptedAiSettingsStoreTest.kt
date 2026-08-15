@@ -1,6 +1,7 @@
 package com.example.myapplication.data.settings
 
 import android.content.Context
+import android.content.SharedPreferences
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.myapplication.data.remote.AiProvider
@@ -14,19 +15,21 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class EncryptedAiSettingsStoreTest {
 
+    private lateinit var prefs: SharedPreferences
     private lateinit var store: EncryptedAiSettingsStore
 
     @Before
     fun setUp() {
-        store = EncryptedAiSettingsStore(ApplicationProvider.getApplicationContext<Context>())
+        prefs = createEncryptedPrefs(ApplicationProvider.getApplicationContext<Context>())
+        prefs.edit().remove("selected_ai_provider").commit()
+        store = EncryptedAiSettingsStore(prefs)
         AiProvider.entries.forEach { provider -> store.clearApiKey(provider) }
-        store.setSelectedProvider(AiProvider.CLAUDE)
     }
 
     @After
     fun tearDown() {
         AiProvider.entries.forEach { provider -> store.clearApiKey(provider) }
-        store.setSelectedProvider(AiProvider.CLAUDE)
+        prefs.edit().remove("selected_ai_provider").commit()
     }
 
     @Test
@@ -41,6 +44,15 @@ class EncryptedAiSettingsStoreTest {
 
         assertEquals("claude-key", store.getApiKey(AiProvider.CLAUDE))
         assertEquals("openai-key", store.getApiKey(AiProvider.OPENAI))
+    }
+
+    @Test
+    fun persistsOpenAiSelectionAcrossStoreInstances() {
+        store.setSelectedProvider(AiProvider.OPENAI)
+
+        val recreatedStore = EncryptedAiSettingsStore(prefs)
+
+        assertEquals(AiProvider.OPENAI, recreatedStore.getSelectedProvider())
     }
 
     @Test
