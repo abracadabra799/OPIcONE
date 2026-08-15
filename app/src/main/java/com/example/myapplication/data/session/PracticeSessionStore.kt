@@ -27,7 +27,8 @@ class PracticeSessionStore {
         completed = value.copy(items = value.items.toList())
     }
 
-    fun lastCompletedSet(): CompletedPracticeSet? = completed
+    fun lastCompletedSet(): CompletedPracticeSet? =
+        completed?.let { it.copy(items = it.items.toList()) }
 }
 
 internal fun normalizeQuestion(value: String): String =
