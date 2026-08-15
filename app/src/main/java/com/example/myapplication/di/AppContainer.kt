@@ -14,6 +14,7 @@ import com.example.myapplication.data.remote.ClaudeApiClient
 import com.example.myapplication.data.remote.DefaultPracticeRepository
 import com.example.myapplication.data.remote.OpenAiApiClient
 import com.example.myapplication.data.remote.PracticeRepository
+import com.example.myapplication.data.session.PracticeSessionStore
 import com.example.myapplication.data.settings.AiSettingsStore
 import com.example.myapplication.data.settings.EncryptedAiSettingsStore
 import java.io.File
@@ -32,9 +33,12 @@ class AppContainer(context: Context) {
 
     val aiSettingsStore: AiSettingsStore = EncryptedAiSettingsStore(appContext)
 
+    val practiceSessionStore = PracticeSessionStore()
+
     val practiceRepository: PracticeRepository = DefaultPracticeRepository(
         providers = setOf(ClaudeApiClient(), OpenAiApiClient()),
-        settingsStore = aiSettingsStore
+        settingsStore = aiSettingsStore,
+        sessionStore = practiceSessionStore
     )
 
     fun newSpeechPlayer(): SpeechPlayer = AndroidSpeechPlayer(appContext)

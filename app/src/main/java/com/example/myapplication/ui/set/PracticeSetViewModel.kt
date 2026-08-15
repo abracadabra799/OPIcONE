@@ -36,10 +36,7 @@ class PracticeSetViewModel(
     fun loadSet() {
         _uiState.value = PracticeSetUiState.Loading
         viewModelScope.launch {
-            practiceRepository.generateSet(
-                category = category,
-                alreadyAskedQuestions = emptyList()
-            ).onSuccess { questions ->
+            practiceRepository.generateSet(category = category).onSuccess { questions ->
                 _uiState.value = PracticeSetUiState.Ready(
                     questions = questions,
                     currentIndex = 0,

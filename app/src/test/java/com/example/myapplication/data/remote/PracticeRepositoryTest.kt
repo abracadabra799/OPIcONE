@@ -1,6 +1,8 @@
 package com.example.myapplication.data.remote
 
 import com.example.myapplication.data.model.PracticeCategory
+import com.example.myapplication.data.model.PracticeQuestion
+import com.example.myapplication.data.session.PracticeSessionStore
 import com.example.myapplication.data.settings.AiSettingsStore
 import java.util.concurrent.CancellationException
 import kotlinx.coroutines.test.runTest
@@ -36,41 +38,49 @@ private class FakeProvider(
 ) : PracticeAiProvider {
     var callCount = 0
     var lastKey: String? = null
-    var lastPrompt: String? = null
+    val prompts = mutableListOf<String>()
 
     override suspend fun generate(apiKey: String, prompt: String): String {
         lastKey = apiKey
-        lastPrompt = prompt
+        prompts += prompt
         return responses.getOrElse(callCount++) { responses.last() }.getOrThrow()
     }
 }
 
+private fun json(vararg questions: String): String = questions.joinToString(
+    prefix = "[",
+    postfix = "]",
+    separator = ","
+) { question ->
+    """{"opic_question":"$question","korean_hint":"힌트","english_sentence":"Answer for $question"}"""
+}
+
+private fun repository(
+    store: PracticeSessionStore,
+    selectedProvider: PracticeAiProvider
+): PracticeRepository = DefaultPracticeRepository(
+    providers = setOf(selectedProvider),
+    settingsStore = FakeAiSettingsStore(
+        selected = selectedProvider.provider,
+        keys = mutableMapOf(selectedProvider.provider to "test-key")
+    ),
+    sessionStore = store
+)
+
 class PracticeRepositoryTest {
-
-    private val validResponseJson = """
-        [{"opic_question": "Tell me about your home.", "korean_hint": "나는 산다 / 서울에", "english_sentence": "I live in Seoul."}]
-    """.trimIndent()
-
-    private fun repository(
-        settings: AiSettingsStore,
-        claude: PracticeAiProvider,
-        openAi: PracticeAiProvider
-    ): PracticeRepository = DefaultPracticeRepository(setOf(claude, openAi), settings)
 
     @Test
     fun `calls only selected OpenAI provider with its key`() = runTest {
+        val store = PracticeSessionStore()
         val settings = FakeAiSettingsStore(
             AiProvider.OPENAI,
             mutableMapOf(AiProvider.OPENAI to "openai-key")
         )
-        val claude = FakeProvider(AiProvider.CLAUDE, listOf(Result.success(validResponseJson)))
-        val openAi = FakeProvider(AiProvider.OPENAI, listOf(Result.success(validResponseJson)))
+        val claude = FakeProvider(AiProvider.CLAUDE, listOf(Result.success(json("Claude"))))
+        val openAi = FakeProvider(AiProvider.OPENAI, listOf(Result.success(json("OpenAI"))))
+        val repository = DefaultPracticeRepository(setOf(claude, openAi), settings, store)
 
-        val result = repository(settings, claude, openAi).generateSet(
-            PracticeCategory.HOUSING,
-            emptyList(),
-            1
-        )
+        val result = repository.generateSet(PracticeCategory.HOUSING, 1)
 
         assertTrue(result.isSuccess)
         assertEquals(0, claude.callCount)
@@ -80,172 +90,193 @@ class PracticeRepositoryTest {
 
     @Test
     fun `missing selected provider key fails without network call`() = runTest {
+        val store = PracticeSessionStore()
         val settings = FakeAiSettingsStore(AiProvider.OPENAI)
-        val claude = FakeProvider(AiProvider.CLAUDE, listOf(Result.success(validResponseJson)))
-        val openAi = FakeProvider(AiProvider.OPENAI, listOf(Result.success(validResponseJson)))
+        val openAi = FakeProvider(AiProvider.OPENAI, listOf(Result.success(json("Question"))))
+        val repository = DefaultPracticeRepository(setOf(openAi), settings, store)
 
-        val error = repository(settings, claude, openAi).generateSet(
-            PracticeCategory.HOUSING,
-            emptyList(),
-            1
-        ).exceptionOrNull()
+        val error = repository.generateSet(PracticeCategory.HOUSING, 1).exceptionOrNull()
 
         assertTrue(error is MissingApiKey)
         assertEquals(AiProvider.OPENAI, (error as MissingApiKey).provider)
-        assertEquals(0, claude.callCount)
         assertEquals(0, openAi.callCount)
+        assertTrue(store.askedQuestions().isEmpty())
     }
 
     @Test
     fun `retries malformed JSON once on same provider`() = runTest {
-        val settings = FakeAiSettingsStore(
+        val store = PracticeSessionStore()
+        val provider = FakeProvider(
             AiProvider.OPENAI,
-            mutableMapOf(AiProvider.OPENAI to "key")
-        )
-        val claude = FakeProvider(AiProvider.CLAUDE, listOf(Result.success(validResponseJson)))
-        val openAi = FakeProvider(
-            AiProvider.OPENAI,
-            listOf(Result.success("not json"), Result.success(validResponseJson))
+            listOf(Result.success("not json"), Result.success(json("Question")))
         )
 
-        assertTrue(repository(settings, claude, openAi).generateSet(
-            PracticeCategory.HOUSING,
-            emptyList(),
-            1
-        ).isSuccess)
-        assertEquals(0, claude.callCount)
-        assertEquals(2, openAi.callCount)
+        val result = repository(store, provider).generateSet(PracticeCategory.HOUSING, 1)
+
+        assertTrue(result.isSuccess)
+        assertEquals(2, provider.callCount)
+        assertTrue(store.containsQuestion("Question"))
     }
 
     @Test
-    fun `second malformed JSON becomes InvalidPracticeSet`() = runTest {
-        val settings = FakeAiSettingsStore(
+    fun `filters session and response duplicates then refills once`() = runTest {
+        val store = PracticeSessionStore().apply {
+            addAskedQuestions(listOf("Old question"))
+        }
+        val provider = FakeProvider(
             AiProvider.OPENAI,
-            mutableMapOf(AiProvider.OPENAI to "key")
+            listOf(
+                Result.success(json("Old question", "New question", " new   QUESTION ")),
+                Result.success(json("Another question"))
+            )
         )
-        val claude = FakeProvider(AiProvider.CLAUDE, listOf(Result.success(validResponseJson)))
-        val openAi = FakeProvider(
+
+        val result = repository(store, provider).generateSet(PracticeCategory.HOUSING, 2)
+
+        assertEquals(
+            listOf("New question", "Another question"),
+            result.getOrThrow().map(PracticeQuestion::opicQuestion)
+        )
+        assertEquals(2, provider.callCount)
+        assertTrue(provider.prompts[1].contains("new question", ignoreCase = true))
+        assertTrue(store.containsQuestion("Old question"))
+        assertTrue(store.containsQuestion("New question"))
+        assertTrue(store.containsQuestion("Another question"))
+    }
+
+    @Test
+    fun `two malformed responses consume only two calls and do not update history`() = runTest {
+        val store = PracticeSessionStore()
+        val provider = FakeProvider(
             AiProvider.OPENAI,
             listOf(Result.success("bad"), Result.success("still bad"))
         )
 
-        val error = repository(settings, claude, openAi).generateSet(
-            PracticeCategory.HOUSING,
-            emptyList(),
-            1
-        ).exceptionOrNull()
+        val error = repository(store, provider)
+            .generateSet(PracticeCategory.HOUSING, 2)
+            .exceptionOrNull()
 
         assertTrue(error is InvalidPracticeSet)
-        assertEquals(2, openAi.callCount)
+        assertEquals(2, provider.callCount)
+        assertTrue(store.askedQuestions().isEmpty())
     }
 
     @Test
     fun `InvalidPracticeSet cause chain excludes malformed response content`() = runTest {
         val sentinel = "remote-secret-sentinel"
-        val settings = FakeAiSettingsStore(
-            AiProvider.OPENAI,
-            mutableMapOf(AiProvider.OPENAI to "key")
-        )
-        val claude = FakeProvider(AiProvider.CLAUDE, listOf(Result.success(validResponseJson)))
-        val openAi = FakeProvider(
+        val store = PracticeSessionStore()
+        val provider = FakeProvider(
             AiProvider.OPENAI,
             listOf(Result.success("bad"), Result.success("$sentinel not json"))
         )
 
-        val error = repository(settings, claude, openAi).generateSet(
-            PracticeCategory.HOUSING,
-            emptyList(),
-            1
-        ).exceptionOrNull()
+        val error = repository(store, provider)
+            .generateSet(PracticeCategory.HOUSING, 1)
+            .exceptionOrNull()
         val causeChain = generateSequence(error) { it.cause }
-            .joinToString("\\n") { it.message.orEmpty() }
+            .joinToString("\n") { it.message.orEmpty() }
 
         assertTrue(error is InvalidPracticeSet)
+        assertTrue(error?.cause is PracticeSetParseException)
         assertFalse(causeChain.contains(sentinel))
     }
 
     @Test
-    fun `provider failure is not retried`() = runTest {
-        val settings = FakeAiSettingsStore(
+    fun `insufficient second response returns typed failure without partial history`() = runTest {
+        val store = PracticeSessionStore()
+        val provider = FakeProvider(
             AiProvider.OPENAI,
-            mutableMapOf(AiProvider.OPENAI to "key")
+            listOf(
+                Result.success(json("Only one")),
+                Result.success(json(" only   ONE "))
+            )
         )
-        val claude = FakeProvider(AiProvider.CLAUDE, listOf(Result.success(validResponseJson)))
-        val openAi = FakeProvider(
+
+        val error = repository(store, provider)
+            .generateSet(PracticeCategory.HOUSING, 2)
+            .exceptionOrNull()
+
+        assertTrue(error is InsufficientUniqueQuestions)
+        assertEquals(2, provider.callCount)
+        assertTrue(store.askedQuestions().isEmpty())
+    }
+
+    @Test
+    fun `provider failure is not retried and does not update partial history`() = runTest {
+        val store = PracticeSessionStore()
+        val provider = FakeProvider(
+            AiProvider.OPENAI,
+            listOf(
+                Result.success(json("Only one")),
+                Result.failure(RateLimited(AiProvider.OPENAI))
+            )
+        )
+
+        val error = repository(store, provider)
+            .generateSet(PracticeCategory.HOUSING, 2)
+            .exceptionOrNull()
+
+        assertTrue(error is RateLimited)
+        assertEquals(2, provider.callCount)
+        assertTrue(store.askedQuestions().isEmpty())
+    }
+
+    @Test
+    fun `first-call provider failure is not retried`() = runTest {
+        val store = PracticeSessionStore()
+        val provider = FakeProvider(
             AiProvider.OPENAI,
             listOf(Result.failure(RateLimited(AiProvider.OPENAI)))
         )
 
-        val error = repository(settings, claude, openAi).generateSet(
-            PracticeCategory.HOUSING,
-            emptyList(),
-            1
-        ).exceptionOrNull()
+        val error = repository(store, provider)
+            .generateSet(PracticeCategory.HOUSING, 1)
+            .exceptionOrNull()
 
         assertTrue(error is RateLimited)
-        assertEquals(1, openAi.callCount)
+        assertEquals(1, provider.callCount)
+        assertTrue(store.askedQuestions().isEmpty())
     }
 
     @Test
     fun `cancellation is rethrown`() = runTest {
-        val settings = FakeAiSettingsStore(
-            AiProvider.CLAUDE,
-            mutableMapOf(AiProvider.CLAUDE to "key")
-        )
-        val claude = FakeProvider(
+        val store = PracticeSessionStore()
+        val provider = FakeProvider(
             AiProvider.CLAUDE,
             listOf(Result.failure(CancellationException("cancel")))
         )
-        val openAi = FakeProvider(AiProvider.OPENAI, listOf(Result.success(validResponseJson)))
 
         var cancellation: CancellationException? = null
         try {
-            repository(settings, claude, openAi).generateSet(
-                PracticeCategory.HOUSING,
-                emptyList(),
-                1
-            )
+            repository(store, provider).generateSet(PracticeCategory.HOUSING, 1)
         } catch (error: CancellationException) {
             cancellation = error
         }
+
         assertTrue(cancellation != null)
+        assertEquals(1, provider.callCount)
+        assertTrue(store.askedQuestions().isEmpty())
     }
 
     @Test
-    fun `returns parsed questions on success`() = runTest {
-        val settings = FakeAiSettingsStore(
-            AiProvider.CLAUDE,
-            mutableMapOf(AiProvider.CLAUDE to "key")
-        )
-        val claude = FakeProvider(AiProvider.CLAUDE, listOf(Result.success(validResponseJson)))
-        val openAi = FakeProvider(AiProvider.OPENAI, listOf(Result.success(validResponseJson)))
+    fun `returns parsed questions and updates history only on complete success`() = runTest {
+        val store = PracticeSessionStore()
+        val provider = FakeProvider(AiProvider.CLAUDE, listOf(Result.success(json("Question"))))
 
-        val result = repository(settings, claude, openAi).generateSet(
-            PracticeCategory.HOUSING,
-            emptyList(),
-            1
-        )
+        val result = repository(store, provider).generateSet(PracticeCategory.HOUSING, 1)
 
         assertTrue(result.isSuccess)
-        assertEquals(1, result.getOrThrow().size)
-        assertEquals("I live in Seoul.", result.getOrThrow()[0].englishSentence)
+        assertEquals("Answer for Question", result.getOrThrow()[0].englishSentence)
+        assertEquals(listOf("question"), store.askedQuestions())
     }
 
     @Test
     fun `builds a prompt that mentions the requested category`() = runTest {
-        val settings = FakeAiSettingsStore(
-            AiProvider.CLAUDE,
-            mutableMapOf(AiProvider.CLAUDE to "key")
-        )
-        val claude = FakeProvider(AiProvider.CLAUDE, listOf(Result.success(validResponseJson)))
-        val openAi = FakeProvider(AiProvider.OPENAI, listOf(Result.success(validResponseJson)))
+        val store = PracticeSessionStore()
+        val provider = FakeProvider(AiProvider.CLAUDE, listOf(Result.success(json("Question"))))
 
-        repository(settings, claude, openAi).generateSet(
-            PracticeCategory.HOUSING,
-            emptyList(),
-            1
-        )
+        repository(store, provider).generateSet(PracticeCategory.HOUSING, 1)
 
-        assertTrue(claude.lastPrompt.orEmpty().contains(PracticeCategory.HOUSING.promptTopic))
+        assertTrue(provider.prompts.single().contains(PracticeCategory.HOUSING.promptTopic))
     }
 }

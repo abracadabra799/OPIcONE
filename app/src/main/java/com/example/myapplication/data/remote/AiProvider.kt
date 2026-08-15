@@ -39,3 +39,7 @@ class InvalidProviderResponse(val provider: AiProvider, cause: Throwable? = null
 class InvalidPracticeSet(cause: Throwable) : PracticeGenerationException(
     "생성된 문제 형식이 올바르지 않습니다.", cause
 )
+
+class InsufficientUniqueQuestions : PracticeGenerationException(
+    "서로 다른 문제를 충분히 만들지 못했습니다. 다시 시도해주세요."
+)

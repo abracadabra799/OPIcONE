@@ -27,7 +27,6 @@ private class FakePracticeRepository(
 ) : PracticeRepository {
     override suspend fun generateSet(
         category: PracticeCategory,
-        alreadyAskedQuestions: List<String>,
         questionCount: Int
     ): Result<List<PracticeQuestion>> = result
 }
