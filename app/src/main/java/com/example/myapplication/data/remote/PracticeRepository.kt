@@ -37,8 +37,10 @@ class DefaultPracticeRepository(
         } catch (_: PracticeSetParseException) {
             try {
                 parsePracticeSet(provider.generate(key, prompt), category)
-            } catch (secondError: PracticeSetParseException) {
-                throw InvalidPracticeSet(secondError)
+            } catch (_: PracticeSetParseException) {
+                throw InvalidPracticeSet(
+                    PracticeSetParseException("Could not parse practice set JSON")
+                )
             }
         }
         Result.success(questions)

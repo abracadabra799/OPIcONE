@@ -5,6 +5,7 @@ import com.example.myapplication.data.settings.AiSettingsStore
 import java.util.concurrent.CancellationException
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -136,6 +137,31 @@ class PracticeRepositoryTest {
 
         assertTrue(error is InvalidPracticeSet)
         assertEquals(2, openAi.callCount)
+    }
+
+    @Test
+    fun `InvalidPracticeSet cause chain excludes malformed response content`() = runTest {
+        val sentinel = "remote-secret-sentinel"
+        val settings = FakeAiSettingsStore(
+            AiProvider.OPENAI,
+            mutableMapOf(AiProvider.OPENAI to "key")
+        )
+        val claude = FakeProvider(AiProvider.CLAUDE, listOf(Result.success(validResponseJson)))
+        val openAi = FakeProvider(
+            AiProvider.OPENAI,
+            listOf(Result.success("bad"), Result.success("$sentinel not json"))
+        )
+
+        val error = repository(settings, claude, openAi).generateSet(
+            PracticeCategory.HOUSING,
+            emptyList(),
+            1
+        ).exceptionOrNull()
+        val causeChain = generateSequence(error) { it.cause }
+            .joinToString("\\n") { it.message.orEmpty() }
+
+        assertTrue(error is InvalidPracticeSet)
+        assertFalse(causeChain.contains(sentinel))
     }
 
     @Test
