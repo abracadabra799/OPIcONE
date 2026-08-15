@@ -14,7 +14,7 @@ interface PracticeRepository {
 }
 
 class ClaudePracticeRepository(
-    private val sender: ClaudePromptSender
+    private val sender: PracticeAiProvider
 ) : PracticeRepository {
 
     override suspend fun generateSet(
@@ -25,11 +25,11 @@ class ClaudePracticeRepository(
     ): Result<List<PracticeQuestion>> {
         return try {
             val prompt = buildSetPrompt(category, alreadyAskedQuestions, questionCount)
-            val rawResponse = sender.sendPrompt(apiKey, prompt)
+            val rawResponse = sender.generate(apiKey, prompt)
             val questions = try {
                 parsePracticeSet(rawResponse, category)
             } catch (_: PracticeSetParseException) {
-                parsePracticeSet(sender.sendPrompt(apiKey, prompt), category)
+                parsePracticeSet(sender.generate(apiKey, prompt), category)
             }
             Result.success(questions)
         } catch (e: CancellationException) {

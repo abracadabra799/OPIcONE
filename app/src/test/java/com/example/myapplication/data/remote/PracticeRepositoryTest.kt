@@ -1,20 +1,22 @@
 package com.example.myapplication.data.remote
 
 import com.example.myapplication.data.model.PracticeCategory
+import java.io.IOException
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-private class FakeClaudePromptSender(
+private class FakeClaudeProvider(
     private val responses: List<Result<String>>
-) : ClaudePromptSender {
+) : PracticeAiProvider {
     constructor(response: Result<String>) : this(listOf(response))
 
+    override val provider = AiProvider.CLAUDE
     var lastPrompt: String? = null
     var callCount: Int = 0
 
-    override suspend fun sendPrompt(apiKey: String, prompt: String): String {
+    override suspend fun generate(apiKey: String, prompt: String): String {
         lastPrompt = prompt
         val response = responses.getOrElse(callCount) { responses.last() }
         callCount += 1
@@ -30,7 +32,7 @@ class PracticeRepositoryTest {
 
     @Test
     fun `returns parsed questions on success`() = runTest {
-        val sender = FakeClaudePromptSender(Result.success(validResponseJson))
+        val sender = FakeClaudeProvider(Result.success(validResponseJson))
         val repository = ClaudePracticeRepository(sender)
 
         val result = repository.generateSet(
@@ -47,7 +49,7 @@ class PracticeRepositoryTest {
 
     @Test
     fun `builds a prompt that mentions the requested category`() = runTest {
-        val sender = FakeClaudePromptSender(Result.success(validResponseJson))
+        val sender = FakeClaudeProvider(Result.success(validResponseJson))
         val repository = ClaudePracticeRepository(sender)
 
         repository.generateSet(
@@ -62,7 +64,7 @@ class PracticeRepositoryTest {
 
     @Test
     fun `wraps network failure into a failed Result`() = runTest {
-        val sender = FakeClaudePromptSender(Result.failure(ClaudeApiException("boom")))
+        val sender = FakeClaudeProvider(Result.failure(NetworkFailure(AiProvider.CLAUDE, IOException("boom"))))
         val repository = ClaudePracticeRepository(sender)
 
         val result = repository.generateSet(
@@ -76,7 +78,7 @@ class PracticeRepositoryTest {
 
     @Test
     fun `wraps malformed response into a failed Result`() = runTest {
-        val sender = FakeClaudePromptSender(Result.success("not json"))
+        val sender = FakeClaudeProvider(Result.success("not json"))
         val repository = ClaudePracticeRepository(sender)
 
         val result = repository.generateSet(
@@ -90,7 +92,7 @@ class PracticeRepositoryTest {
 
     @Test
     fun `retries once when the first response cannot be parsed`() = runTest {
-        val sender = FakeClaudePromptSender(
+        val sender = FakeClaudeProvider(
             listOf(Result.success("not json"), Result.success(validResponseJson))
         )
         val repository = ClaudePracticeRepository(sender)
@@ -109,7 +111,7 @@ class PracticeRepositoryTest {
 
     @Test
     fun `stops after the second malformed response`() = runTest {
-        val sender = FakeClaudePromptSender(
+        val sender = FakeClaudeProvider(
             listOf(Result.success("not json"), Result.success("still not json"))
         )
         val repository = ClaudePracticeRepository(sender)
@@ -126,7 +128,7 @@ class PracticeRepositoryTest {
 
     @Test
     fun `does not retry an api failure`() = runTest {
-        val sender = FakeClaudePromptSender(Result.failure(ClaudeApiException("boom")))
+        val sender = FakeClaudeProvider(Result.failure(NetworkFailure(AiProvider.CLAUDE, IOException("boom"))))
         val repository = ClaudePracticeRepository(sender)
 
         val result = repository.generateSet(
