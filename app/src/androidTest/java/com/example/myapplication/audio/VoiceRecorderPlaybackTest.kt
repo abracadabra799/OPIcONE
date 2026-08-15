@@ -16,6 +16,10 @@ import java.io.File
 @RunWith(AndroidJUnit4::class)
 class VoiceRecorderPlaybackTest {
 
+    private companion object {
+        const val RECORDING_DURATION_MS = 1_000L
+    }
+
     @get:Rule
     val permissionRule: GrantPermissionRule = GrantPermissionRule.grant(Manifest.permission.RECORD_AUDIO)
 
@@ -34,7 +38,7 @@ class VoiceRecorderPlaybackTest {
     fun startThenStopRecording_writesANonEmptyFile() {
         recorder.startRecording(outputFile)
         assertTrue(recorder.isRecording())
-        Thread.sleep(300)
+        Thread.sleep(RECORDING_DURATION_MS)
         recorder.stopRecording()
 
         assertTrue(outputFile.exists() && outputFile.length() > 0)
@@ -44,7 +48,7 @@ class VoiceRecorderPlaybackTest {
     @Test
     fun recordedFile_canBePlayedBack() {
         recorder.startRecording(outputFile)
-        Thread.sleep(300)
+        Thread.sleep(RECORDING_DURATION_MS)
         recorder.stopRecording()
 
         player.play(outputFile)
