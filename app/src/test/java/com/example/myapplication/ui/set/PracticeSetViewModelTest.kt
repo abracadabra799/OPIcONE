@@ -1,6 +1,7 @@
 package com.example.myapplication.ui.set
 
 import com.example.myapplication.MainDispatcherRule
+import com.example.myapplication.audio.SpeechAvailability
 import com.example.myapplication.audio.SpeechPlayer
 import com.example.myapplication.audio.VoicePlayer
 import com.example.myapplication.audio.VoiceRecorder
@@ -19,6 +20,8 @@ import com.example.myapplication.data.remote.ProviderFailure
 import com.example.myapplication.data.remote.RateLimited
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -48,9 +51,15 @@ private class FakePracticeRepository(
     ): Result<List<PracticeQuestion>> = result
 }
 
-private class FakeSpeechPlayer : SpeechPlayer {
+private class FakeSpeechPlayer(
+    initial: SpeechAvailability = SpeechAvailability.Available
+) : SpeechPlayer {
+    private val mutableAvailability = MutableStateFlow(initial)
+    override val availability: StateFlow<SpeechAvailability> = mutableAvailability
     var spokenText: String? = null
-    override fun speak(text: String) { spokenText = text }
+    override fun speak(text: String) {
+        if (availability.value == SpeechAvailability.Available) spokenText = text
+    }
     override fun release() {}
 }
 

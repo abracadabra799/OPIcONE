@@ -6,6 +6,7 @@ import androidx.compose.ui.test.performClick
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.example.myapplication.audio.SpeechPlayer
+import com.example.myapplication.audio.SpeechAvailability
 import com.example.myapplication.audio.VoicePlayer
 import com.example.myapplication.audio.VoiceRecorder
 import com.example.myapplication.data.local.AppDatabase
@@ -15,6 +16,8 @@ import com.example.myapplication.data.model.PracticeQuestion
 import com.example.myapplication.data.remote.AiProvider
 import com.example.myapplication.data.remote.MissingApiKey
 import com.example.myapplication.data.remote.PracticeRepository
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import org.junit.After
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -31,8 +34,15 @@ private class FakePracticeRepository(
     ): Result<List<PracticeQuestion>> = result
 }
 
-private class FakeSpeechPlayer : SpeechPlayer {
-    override fun speak(text: String) {}
+private class FakeSpeechPlayer(
+    initial: SpeechAvailability = SpeechAvailability.Available
+) : SpeechPlayer {
+    private val mutableAvailability = MutableStateFlow(initial)
+    override val availability: StateFlow<SpeechAvailability> = mutableAvailability
+    val spoken = mutableListOf<String>()
+    override fun speak(text: String) {
+        if (availability.value == SpeechAvailability.Available) spoken += text
+    }
     override fun release() {}
 }
 

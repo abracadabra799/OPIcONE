@@ -2,6 +2,8 @@ package com.example.myapplication.audio
 
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -24,5 +26,31 @@ class AndroidSpeechPlayerTest {
 
         player.release()
         player.release()
+    }
+
+    @Test
+    fun initialization_reachesTerminalAvailability() {
+        val player = AndroidSpeechPlayer(ApplicationProvider.getApplicationContext())
+
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync()
+        val reachedTerminalAvailability = waitUntil(timeoutMillis = 5_000) {
+            player.availability.value != SpeechAvailability.Initializing
+        }
+
+        assertTrue(reachedTerminalAvailability)
+        assertTrue(
+            player.availability.value == SpeechAvailability.Available ||
+                player.availability.value == SpeechAvailability.Unavailable
+        )
+        player.release()
+    }
+
+    private fun waitUntil(timeoutMillis: Long, condition: () -> Boolean): Boolean {
+        val deadline = System.currentTimeMillis() + timeoutMillis
+        while (System.currentTimeMillis() < deadline) {
+            if (condition()) return true
+            Thread.sleep(25)
+        }
+        return condition()
     }
 }
