@@ -93,13 +93,15 @@ class OpenAiApiClientTest {
     }
 
     @Test
-    fun `maps malformed success body to invalid provider response`() = runTest {
-        server.enqueue(MockResponse(body = "not-json"))
+    fun `maps malformed success body without exposing its content`() = runTest {
+        val secretBody = "not-json openai-secret-malformed-body"
+        server.enqueue(MockResponse(body = secretBody))
 
-        assertTrue(
-            runCatching { client.generate("key", "prompt") }.exceptionOrNull() is
-                InvalidProviderResponse
-        )
+        val error = runCatching { client.generate("key", "prompt") }.exceptionOrNull()
+
+        assertTrue(error is InvalidProviderResponse)
+        assertFalse(error?.message.orEmpty().contains(secretBody))
+        assertTrue(error?.cause == null)
     }
 
     @Test

@@ -56,7 +56,7 @@ class OpenAiApiClient(
                 val parsed = try {
                     json.decodeFromString<OpenAiResponseBody>(bodyText)
                 } catch (e: SerializationException) {
-                    throw InvalidProviderResponse(provider, e)
+                    throw InvalidProviderResponse(provider)
                 }
                 parsed.output.asSequence()
                     .filter { it.type == "message" }
