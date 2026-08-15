@@ -14,9 +14,7 @@ import com.example.myapplication.data.remote.ClaudeApiClient
 import com.example.myapplication.data.remote.DefaultPracticeRepository
 import com.example.myapplication.data.remote.OpenAiApiClient
 import com.example.myapplication.data.remote.PracticeRepository
-import com.example.myapplication.data.settings.ApiKeyStore
 import com.example.myapplication.data.settings.AiSettingsStore
-import com.example.myapplication.data.settings.EncryptedApiKeyStore
 import com.example.myapplication.data.settings.EncryptedAiSettingsStore
 import java.io.File
 
@@ -33,8 +31,6 @@ class AppContainer(context: Context) {
     val favoriteRepository = FavoriteRepository(database.favoriteDao())
 
     val aiSettingsStore: AiSettingsStore = EncryptedAiSettingsStore(appContext)
-
-    val apiKeyStore: ApiKeyStore = EncryptedApiKeyStore(appContext)
 
     val practiceRepository: PracticeRepository = DefaultPracticeRepository(
         providers = setOf(ClaudeApiClient(), OpenAiApiClient()),

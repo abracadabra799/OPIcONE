@@ -12,8 +12,9 @@ import com.example.myapplication.data.local.AppDatabase
 import com.example.myapplication.data.local.FavoriteRepository
 import com.example.myapplication.data.model.PracticeCategory
 import com.example.myapplication.data.model.PracticeQuestion
+import com.example.myapplication.data.remote.AiProvider
+import com.example.myapplication.data.remote.MissingApiKey
 import com.example.myapplication.data.remote.PracticeRepository
-import com.example.myapplication.data.settings.ApiKeyStore
 import org.junit.After
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -29,12 +30,6 @@ private class FakePracticeRepository(
         alreadyAskedQuestions: List<String>,
         questionCount: Int
     ): Result<List<PracticeQuestion>> = result
-}
-
-private class FakeApiKeyStore(private var key: String? = "test-key") : ApiKeyStore {
-    override fun getApiKey(): String? = key
-    override fun setApiKey(apiKey: String) { key = apiKey }
-    override fun clearApiKey() { key = null }
 }
 
 private class FakeSpeechPlayer : SpeechPlayer {
@@ -74,20 +69,42 @@ class PracticeScreenTest {
         database.close()
     }
 
-    private fun buildViewModel(questionCount: Int = 2): PracticeSetViewModel {
+    private fun buildViewModel(
+        questionCount: Int = 2,
+        result: Result<List<PracticeQuestion>>? = null
+    ): PracticeSetViewModel {
         val questions = (1..questionCount).map {
             PracticeQuestion("힌트$it", "Sentence $it.", PracticeCategory.HOBBY)
         }
         return PracticeSetViewModel(
             category = PracticeCategory.HOBBY,
-            practiceRepository = FakePracticeRepository(Result.success(questions)),
+            practiceRepository = FakePracticeRepository(result ?: Result.success(questions)),
             favoriteRepository = FavoriteRepository(database.favoriteDao()),
-            apiKeyStore = FakeApiKeyStore(),
             speechPlayer = FakeSpeechPlayer(),
             voiceRecorder = FakeVoiceRecorder(),
             voicePlayer = FakeVoicePlayer(),
             recordingFile = File.createTempFile("practice_screen_test", ".m4a").apply { deleteOnExit() }
         )
+    }
+
+    @Test
+    fun tappingSettingsForMissingKey_opensSettings() {
+        var opened = false
+        val viewModel = buildViewModel(
+            result = Result.failure(MissingApiKey(AiProvider.OPENAI))
+        )
+        composeTestRule.setContent {
+            PracticeScreen(
+                viewModel = viewModel,
+                onSetComplete = {},
+                onBack = {},
+                onOpenSettings = { opened = true }
+            )
+        }
+
+        composeTestRule.onNodeWithText("설정으로 이동").performClick()
+
+        assertTrue(opened)
     }
 
     @Test

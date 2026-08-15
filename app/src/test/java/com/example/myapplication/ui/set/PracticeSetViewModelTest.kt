@@ -8,8 +8,15 @@ import com.example.myapplication.data.local.FakeFavoriteDao
 import com.example.myapplication.data.local.FavoriteRepository
 import com.example.myapplication.data.model.PracticeCategory
 import com.example.myapplication.data.model.PracticeQuestion
+import com.example.myapplication.data.remote.AiProvider
+import com.example.myapplication.data.remote.AuthenticationFailed
+import com.example.myapplication.data.remote.InvalidPracticeSet
+import com.example.myapplication.data.remote.InvalidProviderResponse
+import com.example.myapplication.data.remote.MissingApiKey
+import com.example.myapplication.data.remote.NetworkFailure
 import com.example.myapplication.data.remote.PracticeRepository
-import com.example.myapplication.data.settings.ApiKeyStore
+import com.example.myapplication.data.remote.ProviderFailure
+import com.example.myapplication.data.remote.RateLimited
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -30,12 +37,6 @@ private class FakePracticeRepository(
         alreadyAskedQuestions: List<String>,
         questionCount: Int
     ): Result<List<PracticeQuestion>> = result
-}
-
-private class FakeApiKeyStore(private var key: String?) : ApiKeyStore {
-    override fun getApiKey(): String? = key
-    override fun setApiKey(apiKey: String) { key = apiKey }
-    override fun clearApiKey() { key = null }
 }
 
 private class FakeSpeechPlayer : SpeechPlayer {
@@ -63,13 +64,11 @@ class PracticeSetViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private fun buildViewModel(
-        result: Result<List<PracticeQuestion>> = Result.success(listOf(QUESTION_1, QUESTION_2)),
-        apiKey: String? = "test-key"
+        result: Result<List<PracticeQuestion>> = Result.success(listOf(QUESTION_1, QUESTION_2))
     ): PracticeSetViewModel = PracticeSetViewModel(
         category = PracticeCategory.HOBBY,
         practiceRepository = FakePracticeRepository(result),
         favoriteRepository = FavoriteRepository(FakeFavoriteDao()),
-        apiKeyStore = FakeApiKeyStore(apiKey),
         speechPlayer = FakeSpeechPlayer(),
         voiceRecorder = FakeVoiceRecorder(),
         voicePlayer = FakeVoicePlayer(),
@@ -77,11 +76,69 @@ class PracticeSetViewModelTest {
     )
 
     @Test
-    fun `loadSet without an api key emits an error state`() = runTest {
-        val viewModel = buildViewModel(apiKey = null)
+    fun `missing key error offers settings action`() = runTest {
+        val viewModel = buildViewModel(Result.failure(MissingApiKey(AiProvider.OPENAI)))
         advanceUntilIdle()
 
-        assertTrue(viewModel.uiState.value is PracticeSetUiState.Error)
+        assertEquals(
+            PracticeSetUiState.Error("OpenAI API 키가 없습니다.", showSettingsAction = true),
+            viewModel.uiState.value
+        )
+    }
+
+    @Test
+    fun `authentication failure offers settings action`() = runTest {
+        val viewModel = buildViewModel(Result.failure(AuthenticationFailed(AiProvider.CLAUDE)))
+        advanceUntilIdle()
+
+        assertEquals(
+            PracticeSetUiState.Error("Claude API 키를 확인해주세요.", showSettingsAction = true),
+            viewModel.uiState.value
+        )
+    }
+
+    @Test
+    fun `rate limit error offers retry but not settings`() = runTest {
+        val viewModel = buildViewModel(Result.failure(RateLimited(AiProvider.OPENAI)))
+        advanceUntilIdle()
+
+        assertFalse((viewModel.uiState.value as PracticeSetUiState.Error).showSettingsAction)
+    }
+
+    @Test
+    fun `network error does not offer settings action`() = runTest {
+        val viewModel = buildViewModel(
+            Result.failure(NetworkFailure(AiProvider.OPENAI, IllegalStateException("socket detail")))
+        )
+        advanceUntilIdle()
+
+        assertFalse((viewModel.uiState.value as PracticeSetUiState.Error).showSettingsAction)
+    }
+
+    @Test
+    fun `provider error does not offer settings action`() = runTest {
+        val viewModel = buildViewModel(Result.failure(ProviderFailure(AiProvider.OPENAI, 503)))
+        advanceUntilIdle()
+
+        assertFalse((viewModel.uiState.value as PracticeSetUiState.Error).showSettingsAction)
+    }
+
+    @Test
+    fun `invalid provider response does not offer settings action`() = runTest {
+        val viewModel = buildViewModel(Result.failure(InvalidProviderResponse(AiProvider.OPENAI)))
+        advanceUntilIdle()
+
+        assertFalse((viewModel.uiState.value as PracticeSetUiState.Error).showSettingsAction)
+    }
+
+    @Test
+    fun `invalid practice set does not offer settings action`() = runTest {
+        val viewModel = buildViewModel(
+            Result.failure(InvalidPracticeSet(IllegalStateException("parse detail")))
+        )
+        advanceUntilIdle()
+
+        assertFalse((viewModel.uiState.value as PracticeSetUiState.Error).showSettingsAction)
     }
 
     @Test
@@ -158,7 +215,6 @@ class PracticeSetViewModelTest {
             category = PracticeCategory.HOBBY,
             practiceRepository = FakePracticeRepository(Result.success(listOf(QUESTION_1, QUESTION_2))),
             favoriteRepository = FavoriteRepository(FakeFavoriteDao()),
-            apiKeyStore = FakeApiKeyStore("test-key"),
             speechPlayer = speechPlayer,
             voiceRecorder = FakeVoiceRecorder(),
             voicePlayer = FakeVoicePlayer(),

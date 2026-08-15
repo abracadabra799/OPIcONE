@@ -5,7 +5,10 @@ import com.example.myapplication.data.model.PracticeQuestion
 sealed interface PracticeSetUiState {
     data object Loading : PracticeSetUiState
 
-    data class Error(val message: String) : PracticeSetUiState
+    data class Error(
+        val message: String,
+        val showSettingsAction: Boolean = false
+    ) : PracticeSetUiState
 
     data class Ready(
         val questions: List<PracticeQuestion>,

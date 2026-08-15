@@ -56,19 +56,3 @@ internal fun createEncryptedPrefs(context: Context): SharedPreferences {
         EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
     )
 }
-
-/** Temporary adapter for call sites that still only support Claude. */
-@Deprecated("Use EncryptedAiSettingsStore")
-class EncryptedApiKeyStore(context: Context) : ApiKeyStore {
-    private val settingsStore = EncryptedAiSettingsStore(context)
-
-    override fun getApiKey(): String? = settingsStore.getApiKey(AiProvider.CLAUDE)
-
-    override fun setApiKey(apiKey: String) {
-        settingsStore.setApiKey(AiProvider.CLAUDE, apiKey)
-    }
-
-    override fun clearApiKey() {
-        settingsStore.clearApiKey(AiProvider.CLAUDE)
-    }
-}

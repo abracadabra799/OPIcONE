@@ -56,7 +56,6 @@ fun AppNavGraph(appContainer: AppContainer) {
                         category = category,
                         practiceRepository = appContainer.practiceRepository,
                         favoriteRepository = appContainer.favoriteRepository,
-                        apiKeyStore = appContainer.apiKeyStore,
                         speechPlayer = appContainer.newSpeechPlayer(),
                         voiceRecorder = appContainer.newVoiceRecorder(),
                         voicePlayer = appContainer.newVoicePlayer(),
@@ -88,6 +87,9 @@ fun AppNavGraph(appContainer: AppContainer) {
                     }
                 },
                 onBack = { navController.popBackStack() },
+                onOpenSettings = {
+                    navController.navigate(Routes.Settings.route) { launchSingleTop = true }
+                },
                 canRecordAudio = canRecordAudio,
                 recordAudioPermissionDenied = recordAudioPermissionDenied,
                 onRequestRecordAudioPermission = {

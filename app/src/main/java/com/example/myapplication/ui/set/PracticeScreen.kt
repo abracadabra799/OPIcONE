@@ -20,6 +20,7 @@ fun PracticeScreen(
     viewModel: PracticeSetViewModel,
     onSetComplete: (Int) -> Unit,
     onBack: () -> Unit,
+    onOpenSettings: () -> Unit = {},
     canRecordAudio: Boolean = true,
     recordAudioPermissionDenied: Boolean = false,
     onRequestRecordAudioPermission: () -> Unit = {},
@@ -36,6 +37,9 @@ fun PracticeScreen(
                 is PracticeSetUiState.Loading -> Text("문제를 만드는 중입니다...")
                 is PracticeSetUiState.Error -> {
                     Text(state.message)
+                    if (state.showSettingsAction) {
+                        Button(onClick = onOpenSettings) { Text("설정으로 이동") }
+                    }
                     Button(onClick = viewModel::loadSet) { Text("다시 시도") }
                 }
                 is PracticeSetUiState.Ready -> {

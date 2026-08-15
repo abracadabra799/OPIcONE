@@ -7,8 +7,9 @@ import com.example.myapplication.audio.VoicePlayer
 import com.example.myapplication.audio.VoiceRecorder
 import com.example.myapplication.data.local.FavoriteRepository
 import com.example.myapplication.data.model.PracticeCategory
+import com.example.myapplication.data.remote.AuthenticationFailed
+import com.example.myapplication.data.remote.MissingApiKey
 import com.example.myapplication.data.remote.PracticeRepository
-import com.example.myapplication.data.settings.ApiKeyStore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,7 +20,6 @@ class PracticeSetViewModel(
     private val category: PracticeCategory,
     private val practiceRepository: PracticeRepository,
     private val favoriteRepository: FavoriteRepository,
-    private val apiKeyStore: ApiKeyStore,
     private val speechPlayer: SpeechPlayer,
     private val voiceRecorder: VoiceRecorder,
     private val voicePlayer: VoicePlayer,
@@ -36,11 +36,6 @@ class PracticeSetViewModel(
     fun loadSet() {
         _uiState.value = PracticeSetUiState.Loading
         viewModelScope.launch {
-            val apiKey = apiKeyStore.getApiKey()
-            if (apiKey.isNullOrBlank()) {
-                _uiState.value = PracticeSetUiState.Error("설정에서 API 키를 먼저 입력해주세요.")
-                return@launch
-            }
             practiceRepository.generateSet(
                 category = category,
                 alreadyAskedQuestions = emptyList()
@@ -54,7 +49,10 @@ class PracticeSetViewModel(
                     isSetComplete = false
                 )
             }.onFailure { error ->
-                _uiState.value = PracticeSetUiState.Error(error.message ?: "문제를 생성하지 못했습니다.")
+                _uiState.value = PracticeSetUiState.Error(
+                    message = error.message ?: "문제를 생성하지 못했습니다.",
+                    showSettingsAction = error is MissingApiKey || error is AuthenticationFailed
+                )
             }
         }
     }
