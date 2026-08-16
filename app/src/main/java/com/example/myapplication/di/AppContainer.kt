@@ -49,4 +49,7 @@ class AppContainer(context: Context) {
     fun newVoicePlayer(): VoicePlayer = MediaPlayerVoicePlayer()
 
     fun newRecordingFile(): File = File(appContext.cacheDir, "current_recording.m4a")
+
+    fun newFavoriteRecordingFile(favoriteId: Long): File =
+        File(appContext.cacheDir, "favorite_recording_$favoriteId.m4a")
 }

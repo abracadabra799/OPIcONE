@@ -22,6 +22,8 @@ import com.example.myapplication.data.model.PracticeCategory
 import com.example.myapplication.di.AppContainer
 import com.example.myapplication.ui.favorites.FavoritesScreen
 import com.example.myapplication.ui.favorites.FavoritesViewModel
+import com.example.myapplication.ui.favorites.FavoritePracticeScreen
+import com.example.myapplication.ui.favorites.FavoritePracticeViewModel
 import com.example.myapplication.ui.home.HomeScreen
 import com.example.myapplication.ui.set.PracticeScreen
 import com.example.myapplication.ui.set.PracticeSetViewModel
@@ -127,7 +129,58 @@ fun AppNavGraph(appContainer: AppContainer) {
             )
             FavoritesScreen(
                 viewModel = viewModel,
-                onPracticeFavorite = {}
+                onPracticeFavorite = { favoriteId ->
+                    navController.navigate(Routes.FavoritePractice.createRoute(favoriteId))
+                }
+            )
+        }
+        composable(
+            route = Routes.FavoritePractice.route,
+            arguments = listOf(navArgument("favoriteId") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val context = LocalContext.current
+            val favoriteId = backStackEntry.arguments?.getLong("favoriteId")
+                ?: return@composable
+            val viewModel: FavoritePracticeViewModel = viewModel(
+                factory = SimpleViewModelFactory {
+                    FavoritePracticeViewModel(
+                        favoriteId = favoriteId,
+                        favoriteRepository = appContainer.favoriteRepository,
+                        speechPlayer = appContainer.newSpeechPlayer(),
+                        voiceRecorder = appContainer.newVoiceRecorder(),
+                        voicePlayer = appContainer.newVoicePlayer(),
+                        recordingFile = appContainer.newFavoriteRecordingFile(favoriteId)
+                    )
+                }
+            )
+            var canRecordAudio by remember(favoriteId) {
+                mutableStateOf(
+                    ContextCompat.checkSelfPermission(
+                        context,
+                        Manifest.permission.RECORD_AUDIO
+                    ) == PackageManager.PERMISSION_GRANTED
+                )
+            }
+            var recordAudioPermissionDenied by remember(favoriteId) { mutableStateOf(false) }
+            val recordAudioPermissionLauncher = rememberLauncherForActivityResult(
+                contract = ActivityResultContracts.RequestPermission()
+            ) { granted ->
+                canRecordAudio = granted
+                recordAudioPermissionDenied = !granted
+                if (granted) viewModel.startRecording()
+            }
+            val returnToFavorites: () -> Unit = {
+                navController.popBackStack(Routes.Favorites.route, inclusive = false)
+            }
+            FavoritePracticeScreen(
+                viewModel = viewModel,
+                onComplete = returnToFavorites,
+                onBack = returnToFavorites,
+                canRecordAudio = canRecordAudio,
+                recordAudioPermissionDenied = recordAudioPermissionDenied,
+                onRequestRecordAudioPermission = {
+                    recordAudioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                }
             )
         }
         composable(Routes.Settings.route) {

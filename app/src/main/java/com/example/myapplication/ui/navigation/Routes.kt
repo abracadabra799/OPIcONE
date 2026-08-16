@@ -12,4 +12,8 @@ sealed class Routes(val route: String) {
     }
 
     data object SetComplete : Routes("set_complete")
+
+    data object FavoritePractice : Routes("favorite_practice/{favoriteId}") {
+        fun createRoute(favoriteId: Long) = "favorite_practice/$favoriteId"
+    }
 }
