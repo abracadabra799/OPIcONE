@@ -118,9 +118,17 @@ fun AppNavGraph(appContainer: AppContainer) {
         }
         composable(Routes.Favorites.route) {
             val viewModel: FavoritesViewModel = viewModel(
-                factory = SimpleViewModelFactory { FavoritesViewModel(appContainer.favoriteRepository) }
+                factory = SimpleViewModelFactory {
+                    FavoritesViewModel(
+                        appContainer.favoriteRepository,
+                        appContainer.newSpeechPlayer()
+                    )
+                }
             )
-            FavoritesScreen(viewModel = viewModel)
+            FavoritesScreen(
+                viewModel = viewModel,
+                onPracticeFavorite = {}
+            )
         }
         composable(Routes.Settings.route) {
             val viewModel: SettingsViewModel = viewModel(
