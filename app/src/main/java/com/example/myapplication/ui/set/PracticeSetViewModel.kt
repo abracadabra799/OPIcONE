@@ -13,11 +13,16 @@ import com.example.myapplication.data.remote.PracticeRepository
 import com.example.myapplication.data.session.CompletedPracticeItem
 import com.example.myapplication.data.session.CompletedPracticeSet
 import com.example.myapplication.data.session.PracticeSessionStore
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import java.io.File
 
 class PracticeSetViewModel(
@@ -33,6 +38,7 @@ class PracticeSetViewModel(
 
     private val _uiState = MutableStateFlow<PracticeSetUiState>(PracticeSetUiState.Loading)
     val uiState: StateFlow<PracticeSetUiState> = _uiState.asStateFlow()
+    private val favoriteMutationMutex = Mutex()
 
     init {
         loadSet()
@@ -93,26 +99,38 @@ class PracticeSetViewModel(
     fun toggleFavorite() {
         val current = _uiState.value as? PracticeSetUiState.Ready ?: return
         val question = current.questions[current.currentIndex]
-        viewModelScope.launch {
-            if (current.isCurrentFavorite) {
-                favoriteRepository.removeFavoriteByQuestion(question)
+        val isFavorite = !current.isCurrentFavorite
+        _uiState.value = current.copy(
+            favoriteQuestionKeys = if (isFavorite) {
+                current.favoriteQuestionKeys + question.englishSentence
             } else {
-                favoriteRepository.addFavorite(question)
+                current.favoriteQuestionKeys - question.englishSentence
             }
-            val refreshed = _uiState.value as? PracticeSetUiState.Ready ?: return@launch
-            _uiState.value = refreshed.copy(
-                favoriteQuestionKeys = if (current.isCurrentFavorite) {
-                    refreshed.favoriteQuestionKeys - question.englishSentence
-                } else {
-                    refreshed.favoriteQuestionKeys + question.englishSentence
+        )
+        viewModelScope.launch(start = CoroutineStart.UNDISPATCHED) {
+            withContext(NonCancellable) {
+                favoriteMutationMutex.withLock {
+                    if (isFavorite) {
+                        favoriteRepository.addFavorite(question)
+                    } else {
+                        favoriteRepository.removeFavoriteByQuestion(question)
+                    }
                 }
-            )
+            }
         }
+    }
+
+    private fun stopRecordingResources() {
+        if (voiceRecorder.isRecording()) {
+            voiceRecorder.stopRecording()
+        }
+        voicePlayer.stop()
+        recordingFile.delete()
     }
 
     fun nextQuestion() {
         val current = _uiState.value as? PracticeSetUiState.Ready ?: return
-        recordingFile.delete()
+        stopRecordingResources()
         val nextIndex = current.currentIndex + 1
         if (nextIndex >= current.questions.size) {
             sessionStore.saveCompletedSet(
@@ -137,6 +155,6 @@ class PracticeSetViewModel(
 
     override fun onCleared() {
         speechPlayer.release()
-        recordingFile.delete()
+        stopRecordingResources()
     }
 }

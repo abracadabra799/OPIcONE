@@ -54,7 +54,11 @@ fun SpeakingPracticeContent(
             Button(onClick = onPlayRecording) { Text("내 녹음 듣기") }
         }
 
-        if (hasRecording || recordAudioPermissionDenied) {
+        if (
+            hasRecording ||
+            recordAudioPermissionDenied ||
+            speechAvailability == SpeechAvailability.Unavailable
+        ) {
             Button(
                 onClick = onPlayModelSentence,
                 enabled = speechAvailability == SpeechAvailability.Available

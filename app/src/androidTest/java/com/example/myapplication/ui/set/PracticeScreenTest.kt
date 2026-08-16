@@ -168,6 +168,25 @@ class PracticeScreenTest {
     }
 
     @Test
+    fun unavailableSpeech_showsSafeFallbackBeforeRecordingOrPermissionDenial() {
+        val viewModel = buildViewModel(speechAvailability = SpeechAvailability.Unavailable)
+        composeTestRule.setContent {
+            PracticeScreen(
+                viewModel = viewModel,
+                onSetComplete = {},
+                onBack = {},
+                canRecordAudio = true,
+                recordAudioPermissionDenied = false
+            )
+        }
+
+        composeTestRule.onNodeWithText("이 기기에서는 영어 음성 재생을 사용할 수 없습니다.").assertExists()
+        composeTestRule.onNodeWithText("Sentence 1.").assertExists()
+        composeTestRule.onNodeWithText("모범 문장 듣기").assertIsNotEnabled()
+        composeTestRule.onNodeWithText("녹음 시작").assertExists()
+    }
+
+    @Test
     fun tappingNextOnLastQuestion_triggersOnSetComplete() {
         var completed = false
         val viewModel = buildViewModel(questionCount = 1)
