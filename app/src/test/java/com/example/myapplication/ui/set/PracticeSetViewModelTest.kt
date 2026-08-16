@@ -18,6 +18,8 @@ import com.example.myapplication.data.remote.NetworkFailure
 import com.example.myapplication.data.remote.PracticeRepository
 import com.example.myapplication.data.remote.ProviderFailure
 import com.example.myapplication.data.remote.RateLimited
+import com.example.myapplication.data.session.CompletedPracticeItem
+import com.example.myapplication.data.session.PracticeSessionStore
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -82,7 +84,8 @@ class PracticeSetViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private fun buildViewModel(
-        result: Result<List<PracticeQuestion>> = Result.success(listOf(QUESTION_1, QUESTION_2))
+        result: Result<List<PracticeQuestion>> = Result.success(listOf(QUESTION_1, QUESTION_2)),
+        sessionStore: PracticeSessionStore = PracticeSessionStore()
     ): PracticeSetViewModel = PracticeSetViewModel(
         category = PracticeCategory.HOBBY,
         practiceRepository = FakePracticeRepository(result),
@@ -90,7 +93,8 @@ class PracticeSetViewModelTest {
         speechPlayer = FakeSpeechPlayer(),
         voiceRecorder = FakeVoiceRecorder(),
         voicePlayer = FakeVoicePlayer(),
-        recordingFile = File.createTempFile("recording_test", ".m4a").apply { deleteOnExit() }
+        recordingFile = File.createTempFile("recording_test", ".m4a").apply { deleteOnExit() },
+        sessionStore = sessionStore
     )
 
     @Test
@@ -227,6 +231,36 @@ class PracticeSetViewModelTest {
     }
 
     @Test
+    fun `finishing last item stores questions and favorite flags`() = runTest {
+        val sessionStore = PracticeSessionStore()
+        val viewModel = buildViewModel(sessionStore = sessionStore)
+        advanceUntilIdle()
+
+        viewModel.toggleFavorite()
+        advanceUntilIdle()
+        viewModel.nextQuestion()
+        advanceUntilIdle()
+        viewModel.nextQuestion()
+        advanceUntilIdle()
+
+        val completed = requireNotNull(sessionStore.lastCompletedSet())
+        assertEquals(listOf(true, false), completed.items.map(CompletedPracticeItem::isFavorite))
+        assertEquals(listOf(QUESTION_1, QUESTION_2), completed.items.map(CompletedPracticeItem::question))
+    }
+
+    @Test
+    fun `advancing before last item does not store a completed set`() = runTest {
+        val sessionStore = PracticeSessionStore()
+        val viewModel = buildViewModel(sessionStore = sessionStore)
+        advanceUntilIdle()
+
+        viewModel.nextQuestion()
+        advanceUntilIdle()
+
+        assertEquals(null, sessionStore.lastCompletedSet())
+    }
+
+    @Test
     fun `playModelSentence speaks the current question's english sentence`() = runTest {
         val speechPlayer = FakeSpeechPlayer()
         val viewModel = PracticeSetViewModel(
@@ -236,7 +270,8 @@ class PracticeSetViewModelTest {
             speechPlayer = speechPlayer,
             voiceRecorder = FakeVoiceRecorder(),
             voicePlayer = FakeVoicePlayer(),
-            recordingFile = File.createTempFile("recording_test", ".m4a").apply { deleteOnExit() }
+            recordingFile = File.createTempFile("recording_test", ".m4a").apply { deleteOnExit() },
+            sessionStore = PracticeSessionStore()
         )
         advanceUntilIdle()
 

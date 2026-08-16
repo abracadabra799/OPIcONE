@@ -59,7 +59,8 @@ fun AppNavGraph(appContainer: AppContainer) {
                         speechPlayer = appContainer.newSpeechPlayer(),
                         voiceRecorder = appContainer.newVoiceRecorder(),
                         voicePlayer = appContainer.newVoicePlayer(),
-                        recordingFile = appContainer.newRecordingFile()
+                        recordingFile = appContainer.newRecordingFile(),
+                        sessionStore = appContainer.practiceSessionStore
                     )
                 }
             )
@@ -81,8 +82,8 @@ fun AppNavGraph(appContainer: AppContainer) {
             }
             PracticeScreen(
                 viewModel = viewModel,
-                onSetComplete = { questionCount ->
-                    navController.navigate(Routes.SetComplete.createRoute(questionCount)) {
+                onSetComplete = {
+                    navController.navigate(Routes.SetComplete.route) {
                         popUpTo(Routes.Home.route)
                     }
                 },
@@ -97,13 +98,9 @@ fun AppNavGraph(appContainer: AppContainer) {
                 }
             )
         }
-        composable(
-            route = Routes.SetComplete.route,
-            arguments = listOf(navArgument("questionCount") { type = NavType.IntType })
-        ) { backStackEntry ->
-            val questionCount = backStackEntry.arguments?.getInt("questionCount") ?: 0
+        composable(Routes.SetComplete.route) {
             SetCompleteScreen(
-                questionCount = questionCount,
+                questionCount = appContainer.practiceSessionStore.lastCompletedSet()?.items?.size ?: 0,
                 onBackToHome = {
                     navController.navigate(Routes.Home.route) {
                         popUpTo(Routes.Home.route) { inclusive = true }

@@ -1,6 +1,7 @@
 package com.example.myapplication.ui.set
 
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.room.Room
@@ -16,6 +17,7 @@ import com.example.myapplication.data.model.PracticeQuestion
 import com.example.myapplication.data.remote.AiProvider
 import com.example.myapplication.data.remote.MissingApiKey
 import com.example.myapplication.data.remote.PracticeRepository
+import com.example.myapplication.data.session.PracticeSessionStore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import org.junit.After
@@ -80,11 +82,12 @@ class PracticeScreenTest {
 
     private fun buildViewModel(
         questionCount: Int = 2,
-        result: Result<List<PracticeQuestion>>? = null
+        result: Result<List<PracticeQuestion>>? = null,
+        speechAvailability: SpeechAvailability = SpeechAvailability.Available
     ): PracticeSetViewModel {
         val questions = (1..questionCount).map {
             PracticeQuestion(
-                opicQuestion = "Tell me about item $it.",
+                opicQuestion = "Tell me about hobby $it.",
                 koreanHint = "힌트$it",
                 englishSentence = "Sentence $it.",
                 category = PracticeCategory.HOBBY
@@ -94,10 +97,11 @@ class PracticeScreenTest {
             category = PracticeCategory.HOBBY,
             practiceRepository = FakePracticeRepository(result ?: Result.success(questions)),
             favoriteRepository = FavoriteRepository(database.favoriteDao()),
-            speechPlayer = FakeSpeechPlayer(),
+            speechPlayer = FakeSpeechPlayer(speechAvailability),
             voiceRecorder = FakeVoiceRecorder(),
             voicePlayer = FakeVoicePlayer(),
-            recordingFile = File.createTempFile("practice_screen_test", ".m4a").apply { deleteOnExit() }
+            recordingFile = File.createTempFile("practice_screen_test", ".m4a").apply { deleteOnExit() },
+            sessionStore = PracticeSessionStore()
         )
     }
 
@@ -134,6 +138,33 @@ class PracticeScreenTest {
 
         composeTestRule.onNodeWithText("Sentence 1.").assertExists()
         composeTestRule.onNodeWithText("☆ 즐겨찾기").assertExists()
+    }
+
+    @Test
+    fun readyState_showsActualOpicQuestion() {
+        val viewModel = buildViewModel()
+        composeTestRule.setContent {
+            PracticeScreen(viewModel = viewModel, onSetComplete = {}, onBack = {})
+        }
+
+        composeTestRule.onNodeWithText("Tell me about hobby 1.").assertExists()
+    }
+
+    @Test
+    fun unavailableSpeech_showsGuidanceAndDisablesModelSentenceButton() {
+        val viewModel = buildViewModel(speechAvailability = SpeechAvailability.Unavailable)
+        composeTestRule.setContent {
+            PracticeScreen(
+                viewModel = viewModel,
+                onSetComplete = {},
+                onBack = {},
+                canRecordAudio = false,
+                recordAudioPermissionDenied = true
+            )
+        }
+
+        composeTestRule.onNodeWithText("이 기기에서는 영어 음성 재생을 사용할 수 없습니다.").assertExists()
+        composeTestRule.onNodeWithText("모범 문장 듣기").assertIsNotEnabled()
     }
 
     @Test

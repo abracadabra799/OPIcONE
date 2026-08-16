@@ -13,12 +13,13 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.example.myapplication.ui.practice.SpeakingPracticeContent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PracticeScreen(
     viewModel: PracticeSetViewModel,
-    onSetComplete: (Int) -> Unit,
+    onSetComplete: () -> Unit,
     onBack: () -> Unit,
     onOpenSettings: () -> Unit = {},
     canRecordAudio: Boolean = true,
@@ -44,61 +45,37 @@ fun PracticeScreen(
                 }
                 is PracticeSetUiState.Ready -> {
                     if (state.isSetComplete) {
-                        LaunchedEffect(Unit) { onSetComplete(state.questions.size) }
+                        LaunchedEffect(Unit) { onSetComplete() }
                     } else {
-                        PracticeReadyContent(
-                            state = state,
-                            viewModel = viewModel,
+                        val question = state.questions[state.currentIndex]
+                        Text("${state.currentIndex + 1} / ${state.questions.size}")
+                        SpeakingPracticeContent(
+                            opicQuestion = question.opicQuestion,
+                            koreanHint = question.koreanHint,
+                            englishSentence = question.englishSentence,
+                            isRecording = state.isRecording,
+                            hasRecording = state.hasRecording,
+                            isFavorite = state.isCurrentFavorite,
+                            speechAvailability = state.speechAvailability,
                             canRecordAudio = canRecordAudio,
                             recordAudioPermissionDenied = recordAudioPermissionDenied,
-                            onRequestRecordAudioPermission = onRequestRecordAudioPermission
+                            onToggleRecording = {
+                                if (state.isRecording) {
+                                    viewModel.stopRecording()
+                                } else {
+                                    viewModel.startRecording()
+                                }
+                            },
+                            onRequestRecordAudioPermission = onRequestRecordAudioPermission,
+                            onPlayRecording = viewModel::playMyRecording,
+                            onPlayModelSentence = viewModel::playModelSentence,
+                            onToggleFavorite = viewModel::toggleFavorite,
+                            onNext = viewModel::nextQuestion,
+                            nextLabel = "다음 문제"
                         )
                     }
                 }
             }
         }
     }
-}
-
-@Composable
-private fun PracticeReadyContent(
-    state: PracticeSetUiState.Ready,
-    viewModel: PracticeSetViewModel,
-    canRecordAudio: Boolean,
-    recordAudioPermissionDenied: Boolean,
-    onRequestRecordAudioPermission: () -> Unit
-) {
-    val question = state.questions[state.currentIndex]
-
-    Text("${state.currentIndex + 1} / ${state.questions.size}")
-    Text(question.koreanHint, modifier = Modifier.padding(vertical = 16.dp))
-
-    Button(onClick = {
-        when {
-            state.isRecording -> viewModel.stopRecording()
-            canRecordAudio -> viewModel.startRecording()
-            else -> onRequestRecordAudioPermission()
-        }
-    }) {
-        Text(if (state.isRecording) "녹음 중지" else "녹음 시작")
-    }
-
-    if (recordAudioPermissionDenied) {
-        Text("마이크 권한 없이 모범 문장으로 연습할 수 있습니다.")
-    }
-
-    if (state.hasRecording) {
-        Button(onClick = viewModel::playMyRecording) { Text("내 녹음 듣기") }
-    }
-
-    if (state.hasRecording || recordAudioPermissionDenied) {
-        Button(onClick = viewModel::playModelSentence) { Text("모범 문장 듣기") }
-        Text(question.englishSentence, modifier = Modifier.padding(vertical = 8.dp))
-    }
-
-    Button(onClick = viewModel::toggleFavorite) {
-        Text(if (state.isCurrentFavorite) "★ 즐겨찾기 해제" else "☆ 즐겨찾기")
-    }
-
-    Button(onClick = viewModel::nextQuestion) { Text("다음 문제") }
 }

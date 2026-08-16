@@ -1,5 +1,6 @@
 package com.example.myapplication.ui.set
 
+import com.example.myapplication.audio.SpeechAvailability
 import com.example.myapplication.data.model.PracticeQuestion
 
 sealed interface PracticeSetUiState {
@@ -15,7 +16,11 @@ sealed interface PracticeSetUiState {
         val currentIndex: Int,
         val isRecording: Boolean,
         val hasRecording: Boolean,
-        val isCurrentFavorite: Boolean,
+        val favoriteQuestionKeys: Set<String>,
+        val speechAvailability: SpeechAvailability,
         val isSetComplete: Boolean
-    ) : PracticeSetUiState
+    ) : PracticeSetUiState {
+        val isCurrentFavorite: Boolean
+            get() = questions[currentIndex].englishSentence in favoriteQuestionKeys
+    }
 }

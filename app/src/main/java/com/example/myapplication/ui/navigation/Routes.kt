@@ -11,7 +11,5 @@ sealed class Routes(val route: String) {
         fun createRoute(category: PracticeCategory) = "practice/${category.name}"
     }
 
-    data object SetComplete : Routes("set_complete/{questionCount}") {
-        fun createRoute(questionCount: Int) = "set_complete/$questionCount"
-    }
+    data object SetComplete : Routes("set_complete")
 }
