@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -25,6 +26,7 @@ import com.example.myapplication.ui.home.HomeScreen
 import com.example.myapplication.ui.set.PracticeScreen
 import com.example.myapplication.ui.set.PracticeSetViewModel
 import com.example.myapplication.ui.set.SetCompleteScreen
+import com.example.myapplication.ui.set.SetCompleteViewModel
 import com.example.myapplication.ui.settings.SettingsScreen
 import com.example.myapplication.ui.settings.SettingsViewModel
 
@@ -99,8 +101,14 @@ fun AppNavGraph(appContainer: AppContainer) {
             )
         }
         composable(Routes.SetComplete.route) {
+            val viewModel: SetCompleteViewModel = viewModel(
+                factory = SimpleViewModelFactory {
+                    SetCompleteViewModel(appContainer.practiceSessionStore)
+                }
+            )
+            val state by viewModel.uiState.collectAsState()
             SetCompleteScreen(
-                questionCount = appContainer.practiceSessionStore.lastCompletedSet()?.items?.size ?: 0,
+                state = state,
                 onBackToHome = {
                     navController.navigate(Routes.Home.route) {
                         popUpTo(Routes.Home.route) { inclusive = true }
