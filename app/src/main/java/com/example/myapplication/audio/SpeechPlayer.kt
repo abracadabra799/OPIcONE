@@ -11,5 +11,6 @@ sealed interface SpeechAvailability {
 interface SpeechPlayer {
     val availability: StateFlow<SpeechAvailability>
     fun speak(text: String)
+    fun stop()
     fun release()
 }

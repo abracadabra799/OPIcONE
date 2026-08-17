@@ -10,6 +10,7 @@ private const val PREFS_FILE_NAME = "opic_practice_secure_prefs"
 private const val KEY_SELECTED_PROVIDER = "selected_ai_provider"
 private const val KEY_LEGACY_CLAUDE_API_KEY = "anthropic_api_key"
 private const val KEY_OPENAI_API_KEY = "openai_api_key"
+private const val KEY_MODEL_PATH = "on_device_model_path"
 
 class EncryptedAiSettingsStore internal constructor(
     private val prefs: SharedPreferences
@@ -20,26 +21,38 @@ class EncryptedAiSettingsStore internal constructor(
     override fun getSelectedProvider(): AiProvider =
         prefs.getString(KEY_SELECTED_PROVIDER, null)
             ?.let { stored -> AiProvider.entries.firstOrNull { it.name == stored } }
-            ?: AiProvider.CLAUDE
+            ?: AiProvider.LOCAL_BANK
 
     override fun setSelectedProvider(provider: AiProvider) {
         prefs.edit().putString(KEY_SELECTED_PROVIDER, provider.name).apply()
     }
 
-    override fun getApiKey(provider: AiProvider): String? =
-        prefs.getString(keyFor(provider), null)
+    override fun getApiKey(provider: AiProvider): String? {
+        val key = keyFor(provider) ?: return null
+        return prefs.getString(key, null)
+    }
 
     override fun setApiKey(provider: AiProvider, apiKey: String) {
-        prefs.edit().putString(keyFor(provider), apiKey).apply()
+        val key = keyFor(provider) ?: return
+        prefs.edit().putString(key, apiKey).apply()
     }
 
     override fun clearApiKey(provider: AiProvider) {
-        prefs.edit().remove(keyFor(provider)).apply()
+        val key = keyFor(provider) ?: return
+        prefs.edit().remove(key).apply()
     }
 
-    private fun keyFor(provider: AiProvider) = when (provider) {
+    override fun getModelPath(): String? =
+        prefs.getString(KEY_MODEL_PATH, null)
+
+    override fun setModelPath(path: String) {
+        prefs.edit().putString(KEY_MODEL_PATH, path).apply()
+    }
+
+    private fun keyFor(provider: AiProvider): String? = when (provider) {
         AiProvider.CLAUDE -> KEY_LEGACY_CLAUDE_API_KEY
         AiProvider.OPENAI -> KEY_OPENAI_API_KEY
+        AiProvider.LOCAL_BANK, AiProvider.ON_DEVICE_LLM -> null
     }
 }
 

@@ -21,7 +21,7 @@ class EncryptedAiSettingsStoreTest {
     @Before
     fun setUp() {
         prefs = createEncryptedPrefs(ApplicationProvider.getApplicationContext<Context>())
-        prefs.edit().remove("selected_ai_provider").commit()
+        prefs.edit().remove("selected_ai_provider").remove("on_device_model_path").commit()
         store = EncryptedAiSettingsStore(prefs)
         AiProvider.entries.forEach { provider -> store.clearApiKey(provider) }
     }
@@ -29,12 +29,12 @@ class EncryptedAiSettingsStoreTest {
     @After
     fun tearDown() {
         AiProvider.entries.forEach { provider -> store.clearApiKey(provider) }
-        prefs.edit().remove("selected_ai_provider").commit()
+        prefs.edit().remove("selected_ai_provider").remove("on_device_model_path").commit()
     }
 
     @Test
-    fun defaultsToClaude() {
-        assertEquals(AiProvider.CLAUDE, store.getSelectedProvider())
+    fun defaultsToLocalBank() {
+        assertEquals(AiProvider.LOCAL_BANK, store.getSelectedProvider())
     }
 
     @Test
@@ -53,6 +53,15 @@ class EncryptedAiSettingsStoreTest {
         val recreatedStore = EncryptedAiSettingsStore(prefs)
 
         assertEquals(AiProvider.OPENAI, recreatedStore.getSelectedProvider())
+    }
+
+    @Test
+    fun persistsModelPathAcrossStoreInstances() {
+        store.setModelPath("/sdcard/Download/gemma-2b.bin")
+
+        val recreatedStore = EncryptedAiSettingsStore(prefs)
+
+        assertEquals("/sdcard/Download/gemma-2b.bin", recreatedStore.getModelPath())
     }
 
     @Test

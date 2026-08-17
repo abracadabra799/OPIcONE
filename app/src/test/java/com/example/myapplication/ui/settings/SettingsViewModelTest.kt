@@ -9,8 +9,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 private class FakeAiSettingsStore(
-    private var selectedProvider: AiProvider = AiProvider.CLAUDE,
-    private val keys: MutableMap<AiProvider, String> = mutableMapOf()
+    private var selectedProvider: AiProvider = AiProvider.LOCAL_BANK,
+    private val keys: MutableMap<AiProvider, String> = mutableMapOf(),
+    private var modelPath: String? = null
 ) : AiSettingsStore {
     override fun getSelectedProvider(): AiProvider = selectedProvider
 
@@ -27,12 +28,18 @@ private class FakeAiSettingsStore(
     override fun clearApiKey(provider: AiProvider) {
         keys.remove(provider)
     }
+
+    override fun getModelPath(): String? = modelPath
+
+    override fun setModelPath(path: String) {
+        modelPath = path
+    }
 }
 
 class SettingsViewModelTest {
 
     @Test
-    fun `initial state reports key registration without exposing stored key`() {
+    fun `initial state defaults to LOCAL_BANK and reports stored key state`() {
         val store = FakeAiSettingsStore(
             AiProvider.CLAUDE,
             mutableMapOf(AiProvider.CLAUDE to "secret")
@@ -100,5 +107,17 @@ class SettingsViewModelTest {
         assertEquals("claude-key", store.getApiKey(AiProvider.CLAUDE))
         assertNull(store.getApiKey(AiProvider.OPENAI))
         assertFalse(viewModel.uiState.value.hasStoredKey)
+    }
+
+    @Test
+    fun `can save on-device model path`() {
+        val store = FakeAiSettingsStore(AiProvider.ON_DEVICE_LLM)
+        val viewModel = SettingsViewModel(store)
+
+        viewModel.onModelPathChanged("/sdcard/Download/gemma-2b-it.bin")
+        viewModel.saveModelPath()
+
+        assertEquals("/sdcard/Download/gemma-2b-it.bin", store.getModelPath())
+        assertTrue(viewModel.uiState.value.isModelSaved)
     }
 }

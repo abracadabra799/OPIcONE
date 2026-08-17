@@ -42,8 +42,30 @@ class SettingsViewModel(
         _uiState.value = stateFor(provider)
     }
 
-    private fun stateFor(provider: AiProvider) = SettingsUiState(
-        selectedProvider = provider,
-        hasStoredKey = !settingsStore.getApiKey(provider).isNullOrBlank()
-    )
+    fun onModelPathChanged(path: String) {
+        _uiState.value = _uiState.value.copy(modelPathInput = path, isModelSaved = false)
+    }
+
+    fun saveModelPath() {
+        val state = _uiState.value
+        val path = state.modelPathInput.trim()
+        if (path.isNotBlank()) {
+            settingsStore.setModelPath(path)
+            _uiState.value = state.copy(
+                storedModelPath = path,
+                isModelSaved = true
+            )
+        }
+    }
+
+    private fun stateFor(provider: AiProvider): SettingsUiState {
+        val storedPath = settingsStore.getModelPath()
+        return SettingsUiState(
+            selectedProvider = provider,
+            hasStoredKey = !settingsStore.getApiKey(provider).isNullOrBlank(),
+            storedModelPath = storedPath,
+            modelPathInput = storedPath.orEmpty(),
+            isModelSaved = !storedPath.isNullOrBlank()
+        )
+    }
 }

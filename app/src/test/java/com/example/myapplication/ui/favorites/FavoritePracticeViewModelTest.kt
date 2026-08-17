@@ -41,6 +41,8 @@ private class FakeFavoritePracticeSpeechPlayer(
         spoken += text
     }
 
+    override fun stop() {}
+
     override fun release() {
         releaseCount += 1
     }

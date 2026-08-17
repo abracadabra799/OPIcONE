@@ -62,6 +62,12 @@ class AndroidSpeechPlayer(context: Context) : SpeechPlayer {
         }
     }
 
+    override fun stop() {
+        synchronized(lock) {
+            textToSpeech?.stop()
+        }
+    }
+
     override fun release() {
         val speechEngine = synchronized(lock) {
             if (isReleased) return

@@ -29,6 +29,8 @@ private class FakeSpeechPlayer(
         spoken += text
     }
 
+    override fun stop() {}
+
     override fun release() {
         released = true
     }

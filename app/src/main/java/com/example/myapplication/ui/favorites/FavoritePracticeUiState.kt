@@ -13,6 +13,8 @@ sealed interface FavoritePracticeUiState {
         val isRecording: Boolean = false,
         val hasRecording: Boolean = false,
         val isComplete: Boolean = false,
-        val speechAvailability: SpeechAvailability
+        val speechAvailability: SpeechAvailability,
+        val evaluationResult: com.example.myapplication.audio.SpeakingEvaluationResult? = null,
+        val isAnswerRevealed: Boolean = false
     ) : FavoritePracticeUiState
 }

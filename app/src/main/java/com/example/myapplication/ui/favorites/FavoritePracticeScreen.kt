@@ -3,6 +3,8 @@ package com.example.myapplication.ui.favorites
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
@@ -43,7 +45,12 @@ fun FavoritePracticeScreen(
             )
         }
     ) { innerPadding ->
-        Column(modifier = Modifier.padding(innerPadding).padding(16.dp)) {
+        Column(
+            modifier = Modifier
+                .padding(innerPadding)
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState())
+        ) {
             when (val state = uiState) {
                 FavoritePracticeUiState.Loading -> {
                     Text("즐겨찾기 문장을 불러오는 중입니다...")
@@ -80,7 +87,10 @@ fun FavoritePracticeScreen(
                             onPlayModelSentence = viewModel::playModelSentence,
                             onToggleFavorite = null,
                             onNext = viewModel::complete,
-                            nextLabel = "연습 완료"
+                            nextLabel = "연습 완료",
+                            evaluationResult = state.evaluationResult,
+                            isAnswerRevealed = state.isAnswerRevealed,
+                            onRevealAnswer = viewModel::revealAnswer
                         )
                     }
                 }

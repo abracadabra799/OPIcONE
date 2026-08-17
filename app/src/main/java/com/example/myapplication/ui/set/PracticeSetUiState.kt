@@ -18,7 +18,9 @@ sealed interface PracticeSetUiState {
         val hasRecording: Boolean,
         val favoriteQuestionKeys: Set<String>,
         val speechAvailability: SpeechAvailability,
-        val isSetComplete: Boolean
+        val isSetComplete: Boolean,
+        val evaluationResult: com.example.myapplication.audio.SpeakingEvaluationResult? = null,
+        val isAnswerRevealed: Boolean = false
     ) : PracticeSetUiState {
         val isCurrentFavorite: Boolean
             get() = questions[currentIndex].englishSentence in favoriteQuestionKeys

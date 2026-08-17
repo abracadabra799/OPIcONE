@@ -37,13 +37,14 @@ class ClaudeApiClient(
     override val provider = AiProvider.CLAUDE
     private val json = Json { ignoreUnknownKeys = true }
 
-    override suspend fun generate(apiKey: String, prompt: String): String = withContext(Dispatchers.IO) {
+    override suspend fun generate(apiKey: String?, prompt: String): String = withContext(Dispatchers.IO) {
+        val validKey = apiKey?.takeIf(String::isNotBlank) ?: throw MissingApiKey(provider)
         val body = json.encodeToString(
             ClaudeRequestBody(messages = listOf(ClaudeMessage("user", prompt)))
         )
         val request = Request.Builder()
             .url(baseUrl)
-            .addHeader("x-api-key", apiKey)
+            .addHeader("x-api-key", validKey)
             .addHeader("anthropic-version", "2023-06-01")
             .post(body.toRequestBody("application/json".toMediaType()))
             .build()

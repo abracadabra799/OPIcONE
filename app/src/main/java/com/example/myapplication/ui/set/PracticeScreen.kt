@@ -2,6 +2,8 @@ package com.example.myapplication.ui.set
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
@@ -33,7 +35,12 @@ fun PracticeScreen(
         modifier = modifier,
         topBar = { TopAppBar(title = { Text("오늘의 세트") }) }
     ) { innerPadding ->
-        Column(modifier = Modifier.padding(innerPadding).padding(16.dp)) {
+        Column(
+            modifier = Modifier
+                .padding(innerPadding)
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState())
+        ) {
             when (val state = uiState) {
                 is PracticeSetUiState.Loading -> Text("문제를 만드는 중입니다...")
                 is PracticeSetUiState.Error -> {
@@ -71,7 +78,10 @@ fun PracticeScreen(
                             onPlayModelSentence = viewModel::playModelSentence,
                             onToggleFavorite = viewModel::toggleFavorite,
                             onNext = viewModel::nextQuestion,
-                            nextLabel = "다음 문제"
+                            nextLabel = "다음 문제",
+                            evaluationResult = state.evaluationResult,
+                            isAnswerRevealed = state.isAnswerRevealed,
+                            onRevealAnswer = viewModel::revealAnswer
                         )
                     }
                 }

@@ -17,6 +17,12 @@ interface FavoriteDao {
     @Query("DELETE FROM favorite_sentences WHERE englishSentence = :englishSentence")
     suspend fun deleteByEnglishSentence(englishSentence: String)
 
+    @Query("DELETE FROM favorite_sentences WHERE createdAt < :cutoffTime")
+    suspend fun deleteExpired(cutoffTime: Long): Int
+
+    @Query("SELECT * FROM favorite_sentences WHERE createdAt >= :cutoffTime ORDER BY createdAt DESC")
+    fun observeActive(cutoffTime: Long): Flow<List<FavoriteSentence>>
+
     @Query("SELECT * FROM favorite_sentences ORDER BY createdAt DESC")
     fun observeAll(): Flow<List<FavoriteSentence>>
 

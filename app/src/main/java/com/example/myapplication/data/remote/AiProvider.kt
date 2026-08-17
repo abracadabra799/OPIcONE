@@ -1,13 +1,18 @@
 package com.example.myapplication.data.remote
 
-enum class AiProvider(val displayName: String) {
-    CLAUDE("Claude"),
-    OPENAI("OpenAI")
+enum class AiProvider(
+    val displayName: String,
+    val requiresApiKey: Boolean
+) {
+    LOCAL_BANK("내장 AL 마스터 뱅크 (Zero-API-Key)", false),
+    ON_DEVICE_LLM("온디바이스 LLM (Gemma/Llama)", false),
+    CLAUDE("Claude", true),
+    OPENAI("OpenAI", true)
 }
 
 interface PracticeAiProvider {
     val provider: AiProvider
-    suspend fun generate(apiKey: String, prompt: String): String
+    suspend fun generate(apiKey: String?, prompt: String): String
 }
 
 sealed class PracticeGenerationException(message: String, cause: Throwable? = null) :

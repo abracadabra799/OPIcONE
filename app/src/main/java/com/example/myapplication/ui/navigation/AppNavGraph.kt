@@ -20,11 +20,14 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.myapplication.data.model.PracticeCategory
 import com.example.myapplication.di.AppContainer
-import com.example.myapplication.ui.favorites.FavoritesScreen
-import com.example.myapplication.ui.favorites.FavoritesViewModel
 import com.example.myapplication.ui.favorites.FavoritePracticeScreen
 import com.example.myapplication.ui.favorites.FavoritePracticeViewModel
+import com.example.myapplication.ui.favorites.FavoritesScreen
+import com.example.myapplication.ui.favorites.FavoritesViewModel
 import com.example.myapplication.ui.home.HomeScreen
+import com.example.myapplication.ui.news.NewsDetailScreen
+import com.example.myapplication.ui.news.NewsDetailViewModel
+import com.example.myapplication.ui.news.NewsViewModel
 import com.example.myapplication.ui.set.PracticeScreen
 import com.example.myapplication.ui.set.PracticeSetViewModel
 import com.example.myapplication.ui.set.SetCompleteScreen
@@ -38,14 +41,88 @@ fun AppNavGraph(appContainer: AppContainer) {
 
     NavHost(navController = navController, startDestination = Routes.Home.route) {
         composable(Routes.Home.route) {
+            val newsViewModel: NewsViewModel = viewModel(
+                factory = SimpleViewModelFactory {
+                    NewsViewModel(
+                        newsRepository = appContainer.worldNewsRepository,
+                        favoriteRepository = appContainer.favoriteRepository,
+                        speechPlayer = appContainer.newSpeechPlayer()
+                    )
+                }
+            )
+            val favoritesViewModel: FavoritesViewModel = viewModel(
+                factory = SimpleViewModelFactory {
+                    FavoritesViewModel(
+                        favoriteRepository = appContainer.favoriteRepository,
+                        speechPlayer = appContainer.newSpeechPlayer()
+                    )
+                }
+            )
+
             HomeScreen(
                 onCategorySelected = { category ->
                     navController.navigate(Routes.Practice.createRoute(category))
                 },
-                onOpenFavorites = { navController.navigate(Routes.Favorites.route) },
-                onOpenSettings = { navController.navigate(Routes.Settings.route) }
+                onArticleSelected = { articleId ->
+                    navController.navigate(Routes.NewsDetail.createRoute(articleId))
+                },
+                onPracticeFavorite = { favoriteId ->
+                    navController.navigate(Routes.FavoritePractice.createRoute(favoriteId))
+                },
+                onOpenSettings = { navController.navigate(Routes.Settings.route) },
+                newsViewModel = newsViewModel,
+                favoritesViewModel = favoritesViewModel
             )
         }
+
+        composable(
+            route = Routes.NewsDetail.route,
+            arguments = listOf(navArgument("articleId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val context = LocalContext.current
+            val articleId = backStackEntry.arguments?.getString("articleId") ?: return@composable
+            val viewModel: NewsDetailViewModel = viewModel(
+                factory = SimpleViewModelFactory {
+                    NewsDetailViewModel(
+                        articleId = articleId,
+                        newsRepository = appContainer.worldNewsRepository,
+                        favoriteRepository = appContainer.favoriteRepository,
+                        speechPlayer = appContainer.newSpeechPlayer(),
+                        voiceRecorder = appContainer.newVoiceRecorder(),
+                        voicePlayer = appContainer.newVoicePlayer(),
+                        recordingFile = appContainer.newRecordingFile(),
+                        speechToTextEngine = appContainer.newSpeechToTextEngine()
+                    )
+                }
+            )
+            var canRecordAudio by remember(articleId) {
+                mutableStateOf(
+                    ContextCompat.checkSelfPermission(
+                        context,
+                        Manifest.permission.RECORD_AUDIO
+                    ) == PackageManager.PERMISSION_GRANTED
+                )
+            }
+            var recordAudioPermissionDenied by remember(articleId) { mutableStateOf(false) }
+            val recordAudioPermissionLauncher = rememberLauncherForActivityResult(
+                contract = ActivityResultContracts.RequestPermission()
+            ) { granted ->
+                canRecordAudio = granted
+                recordAudioPermissionDenied = !granted
+                if (granted) viewModel.startRecording()
+            }
+
+            NewsDetailScreen(
+                viewModel = viewModel,
+                onBack = { navController.popBackStack() },
+                canRecordAudio = canRecordAudio,
+                recordAudioPermissionDenied = recordAudioPermissionDenied,
+                onRequestRecordAudioPermission = {
+                    recordAudioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                }
+            )
+        }
+
         composable(
             route = Routes.Practice.route,
             arguments = listOf(navArgument("category") { type = NavType.StringType })
@@ -64,7 +141,8 @@ fun AppNavGraph(appContainer: AppContainer) {
                         voiceRecorder = appContainer.newVoiceRecorder(),
                         voicePlayer = appContainer.newVoicePlayer(),
                         recordingFile = appContainer.newRecordingFile(),
-                        sessionStore = appContainer.practiceSessionStore
+                        sessionStore = appContainer.practiceSessionStore,
+                        speechToTextEngine = appContainer.newSpeechToTextEngine()
                     )
                 }
             )
@@ -102,6 +180,7 @@ fun AppNavGraph(appContainer: AppContainer) {
                 }
             )
         }
+
         composable(Routes.SetComplete.route) {
             val viewModel: SetCompleteViewModel = viewModel(
                 factory = SimpleViewModelFactory {
@@ -118,6 +197,7 @@ fun AppNavGraph(appContainer: AppContainer) {
                 }
             )
         }
+
         composable(Routes.Favorites.route) {
             val viewModel: FavoritesViewModel = viewModel(
                 factory = SimpleViewModelFactory {
@@ -134,6 +214,7 @@ fun AppNavGraph(appContainer: AppContainer) {
                 }
             )
         }
+
         composable(
             route = Routes.FavoritePractice.route,
             arguments = listOf(navArgument("favoriteId") { type = NavType.LongType })
@@ -149,7 +230,8 @@ fun AppNavGraph(appContainer: AppContainer) {
                         speechPlayer = appContainer.newSpeechPlayer(),
                         voiceRecorder = appContainer.newVoiceRecorder(),
                         voicePlayer = appContainer.newVoicePlayer(),
-                        recordingFile = appContainer.newFavoriteRecordingFile(favoriteId)
+                        recordingFile = appContainer.newFavoriteRecordingFile(favoriteId),
+                        speechToTextEngine = appContainer.newSpeechToTextEngine()
                     )
                 }
             )
@@ -170,7 +252,7 @@ fun AppNavGraph(appContainer: AppContainer) {
                 if (granted) viewModel.startRecording()
             }
             val returnToFavorites: () -> Unit = {
-                navController.popBackStack(Routes.Favorites.route, inclusive = false)
+                navController.popBackStack()
             }
             FavoritePracticeScreen(
                 viewModel = viewModel,
@@ -183,6 +265,7 @@ fun AppNavGraph(appContainer: AppContainer) {
                 }
             )
         }
+
         composable(Routes.Settings.route) {
             val viewModel: SettingsViewModel = viewModel(
                 factory = SimpleViewModelFactory { SettingsViewModel(appContainer.aiSettingsStore) }

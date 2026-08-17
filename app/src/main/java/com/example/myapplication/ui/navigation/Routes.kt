@@ -16,4 +16,8 @@ sealed class Routes(val route: String) {
     data object FavoritePractice : Routes("favorite_practice/{favoriteId}") {
         fun createRoute(favoriteId: Long) = "favorite_practice/$favoriteId"
     }
+
+    data object NewsDetail : Routes("news_detail/{articleId}") {
+        fun createRoute(articleId: String) = "news_detail/$articleId"
+    }
 }

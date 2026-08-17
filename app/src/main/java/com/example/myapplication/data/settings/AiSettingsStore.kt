@@ -8,4 +8,6 @@ interface AiSettingsStore {
     fun getApiKey(provider: AiProvider): String?
     fun setApiKey(provider: AiProvider, apiKey: String)
     fun clearApiKey(provider: AiProvider)
+    fun getModelPath(): String?
+    fun setModelPath(path: String)
 }

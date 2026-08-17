@@ -36,11 +36,12 @@ class OpenAiApiClient(
     override val provider = AiProvider.OPENAI
     private val json = Json { ignoreUnknownKeys = true }
 
-    override suspend fun generate(apiKey: String, prompt: String): String = withContext(Dispatchers.IO) {
+    override suspend fun generate(apiKey: String?, prompt: String): String = withContext(Dispatchers.IO) {
+        val validKey = apiKey?.takeIf(String::isNotBlank) ?: throw MissingApiKey(provider)
         val payload = json.encodeToString(OpenAiRequestBody("gpt-5.6-terra", prompt))
         val request = Request.Builder()
             .url(baseUrl)
-            .addHeader("Authorization", "Bearer $apiKey")
+            .addHeader("Authorization", "Bearer $validKey")
             .post(payload.toRequestBody("application/json".toMediaType()))
             .build()
 

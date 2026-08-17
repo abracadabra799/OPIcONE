@@ -2,8 +2,10 @@ package com.example.myapplication.ui.favorites
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.myapplication.audio.SpeakingEvaluator
 import com.example.myapplication.audio.SpeechAvailability
 import com.example.myapplication.audio.SpeechPlayer
+import com.example.myapplication.audio.SpeechToTextEngine
 import com.example.myapplication.audio.VoicePlayer
 import com.example.myapplication.audio.VoiceRecorder
 import com.example.myapplication.data.local.FavoriteRepository
@@ -19,7 +21,8 @@ class FavoritePracticeViewModel(
     private val speechPlayer: SpeechPlayer,
     private val voiceRecorder: VoiceRecorder,
     private val voicePlayer: VoicePlayer,
-    private val recordingFile: File
+    private val recordingFile: File,
+    private val speechToTextEngine: SpeechToTextEngine? = null
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<FavoritePracticeUiState>(
@@ -54,14 +57,28 @@ class FavoritePracticeViewModel(
         val current = activeReadyState() ?: return
         if (current.isRecording) return
         voiceRecorder.startRecording(recordingFile)
-        _uiState.value = current.copy(isRecording = true)
+        speechToTextEngine?.startListening(
+            onResult = { text ->
+                val ready = activeReadyState() ?: return@startListening
+                val eval = SpeakingEvaluator.evaluate(text, ready.favorite.englishSentence)
+                _uiState.value = ready.copy(evaluationResult = eval)
+            },
+            onError = { _ -> }
+        )
+        _uiState.value = current.copy(isRecording = true, isAnswerRevealed = true, evaluationResult = null)
     }
 
     fun stopRecording() {
         val current = activeReadyState() ?: return
         if (!current.isRecording) return
         voiceRecorder.stopRecording()
-        _uiState.value = current.copy(isRecording = false, hasRecording = true)
+        speechToTextEngine?.stopListening()
+        _uiState.value = current.copy(isRecording = false, hasRecording = true, isAnswerRevealed = true)
+    }
+
+    fun revealAnswer() {
+        val current = activeReadyState() ?: return
+        _uiState.value = current.copy(isAnswerRevealed = true)
     }
 
     fun playMyRecording() {
@@ -100,6 +117,8 @@ class FavoritePracticeViewModel(
         if (voiceRecorder.isRecording()) {
             voiceRecorder.stopRecording()
         }
+        speechToTextEngine?.stopListening()
+        speechToTextEngine?.release()
         voicePlayer.stop()
         speechPlayer.release()
         recordingFile.delete()

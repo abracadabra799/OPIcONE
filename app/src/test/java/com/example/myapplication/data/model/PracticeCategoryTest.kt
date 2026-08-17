@@ -8,8 +8,8 @@ import org.junit.Test
 class PracticeCategoryTest {
 
     @Test
-    fun `has eight categories covering the al-level topic list`() {
-        assertEquals(8, PracticeCategory.entries.size)
+    fun `has ten categories covering the al-level topic list including pets and lounge review`() {
+        assertEquals(10, PracticeCategory.entries.size)
     }
 
     @Test
@@ -21,10 +21,12 @@ class PracticeCategoryTest {
     }
 
     @Test
-    fun `includes the roleplay and comparison categories required for AL level`() {
+    fun `includes the roleplay and comparison and pets and lounge review categories required for AL level`() {
         assertTrue(PracticeCategory.entries.contains(PracticeCategory.SURVEY_ROLEPLAY))
         assertTrue(PracticeCategory.entries.contains(PracticeCategory.COMPARISON))
         assertTrue(PracticeCategory.entries.contains(PracticeCategory.PROBLEM_SOLVING_ROLEPLAY))
+        assertTrue(PracticeCategory.entries.contains(PracticeCategory.PETS))
+        assertTrue(PracticeCategory.entries.contains(PracticeCategory.LOUNGE_REVIEW))
     }
 
     @Test

@@ -69,6 +69,7 @@ private class FakeSpeechPlayer(
     override fun speak(text: String) {
         if (availability.value == SpeechAvailability.Available) spokenText = text
     }
+    override fun stop() {}
     override fun release() {}
 }
 
@@ -107,6 +108,10 @@ private class DelayedFavoriteDao : FavoriteDao {
     override suspend fun deleteByEnglishSentence(englishSentence: String) {
         favorites.value = favorites.value.filterNot { it.englishSentence == englishSentence }
     }
+
+    override suspend fun deleteExpired(cutoffTime: Long): Int = 0
+
+    override fun observeActive(cutoffTime: Long): Flow<List<FavoriteSentence>> = favorites
 
     override fun observeAll(): Flow<List<FavoriteSentence>> = favorites
 

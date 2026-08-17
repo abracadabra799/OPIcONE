@@ -1,6 +1,8 @@
 package com.example.myapplication.data.local
 
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.map
 
 class FakeFavoriteDao : FavoriteDao {
 
@@ -21,7 +23,16 @@ class FakeFavoriteDao : FavoriteDao {
         favorites.value = favorites.value.filterNot { it.englishSentence == englishSentence }
     }
 
-    override fun observeAll() = favorites
+    override suspend fun deleteExpired(cutoffTime: Long): Int {
+        val before = favorites.value.size
+        favorites.value = favorites.value.filter { it.createdAt >= cutoffTime }
+        return before - favorites.value.size
+    }
+
+    override fun observeActive(cutoffTime: Long): Flow<List<FavoriteSentence>> =
+        favorites.map { list -> list.filter { it.createdAt >= cutoffTime } }
+
+    override fun observeAll(): Flow<List<FavoriteSentence>> = favorites
 
     override suspend fun findById(id: Long): FavoriteSentence? =
         favorites.value.firstOrNull { it.id == id }

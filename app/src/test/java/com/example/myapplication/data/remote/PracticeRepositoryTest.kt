@@ -13,7 +13,8 @@ import org.junit.Test
 
 private class FakeAiSettingsStore(
     private var selected: AiProvider,
-    private val keys: MutableMap<AiProvider, String> = mutableMapOf()
+    private val keys: MutableMap<AiProvider, String> = mutableMapOf(),
+    private var modelPath: String? = null
 ) : AiSettingsStore {
     override fun getSelectedProvider() = selected
 
@@ -30,6 +31,12 @@ private class FakeAiSettingsStore(
     override fun clearApiKey(provider: AiProvider) {
         keys.remove(provider)
     }
+
+    override fun getModelPath(): String? = modelPath
+
+    override fun setModelPath(path: String) {
+        modelPath = path
+    }
 }
 
 private class FakeProvider(
@@ -40,7 +47,7 @@ private class FakeProvider(
     var lastKey: String? = null
     val prompts = mutableListOf<String>()
 
-    override suspend fun generate(apiKey: String, prompt: String): String {
+    override suspend fun generate(apiKey: String?, prompt: String): String {
         lastKey = apiKey
         prompts += prompt
         return responses.getOrElse(callCount++) { responses.last() }.getOrThrow()
@@ -68,6 +75,20 @@ private fun repository(
 )
 
 class PracticeRepositoryTest {
+
+    @Test
+    fun `LOCAL_BANK generates questions without requiring API key`() = runTest {
+        val store = PracticeSessionStore()
+        val settings = FakeAiSettingsStore(AiProvider.LOCAL_BANK)
+        val localBank = FakeProvider(AiProvider.LOCAL_BANK, listOf(Result.success(json("Local Q1"))))
+        val repository = DefaultPracticeRepository(setOf(localBank), settings, store)
+
+        val result = repository.generateSet(PracticeCategory.HOUSING, 1)
+
+        assertTrue(result.isSuccess)
+        assertEquals(1, localBank.callCount)
+        assertEquals("Local Q1", result.getOrThrow().first().opicQuestion)
+    }
 
     @Test
     fun `calls only selected OpenAI provider with its key`() = runTest {

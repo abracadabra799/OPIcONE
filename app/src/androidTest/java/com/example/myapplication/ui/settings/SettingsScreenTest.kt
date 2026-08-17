@@ -1,9 +1,9 @@
 package com.example.myapplication.ui.settings
 
-import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.hasImeAction
+import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -16,8 +16,9 @@ import org.junit.Rule
 import org.junit.Test
 
 private class FakeAiSettingsStore(
-    private var selectedProvider: AiProvider = AiProvider.CLAUDE,
-    private val keys: MutableMap<AiProvider, String> = mutableMapOf()
+    private var selectedProvider: AiProvider = AiProvider.LOCAL_BANK,
+    private val keys: MutableMap<AiProvider, String> = mutableMapOf(),
+    private var modelPath: String? = null
 ) : AiSettingsStore {
     override fun getSelectedProvider(): AiProvider = selectedProvider
 
@@ -34,6 +35,12 @@ private class FakeAiSettingsStore(
     override fun clearApiKey(provider: AiProvider) {
         keys.remove(provider)
     }
+
+    override fun getModelPath(): String? = modelPath
+
+    override fun setModelPath(path: String) {
+        modelPath = path
+    }
 }
 
 class SettingsScreenTest {
@@ -42,9 +49,18 @@ class SettingsScreenTest {
     val composeTestRule = createComposeRule()
 
     @Test
+    fun localBank_showsZeroApiKeyDescription() {
+        composeTestRule.setContent {
+            SettingsScreen(viewModel = SettingsViewModel(FakeAiSettingsStore(AiProvider.LOCAL_BANK)))
+        }
+
+        composeTestRule.onNodeWithText("✨ 제로 API 키 & 제로 레이턴시").assertExists()
+    }
+
+    @Test
     fun apiKeyInput_hasSingleLineImeAction() {
         composeTestRule.setContent {
-            SettingsScreen(viewModel = SettingsViewModel(FakeAiSettingsStore()))
+            SettingsScreen(viewModel = SettingsViewModel(FakeAiSettingsStore(AiProvider.CLAUDE)))
         }
 
         composeTestRule.onNodeWithTag("apiKeyInput").assert(hasImeAction(ImeAction.Done))
@@ -70,7 +86,7 @@ class SettingsScreenTest {
 
     @Test
     fun savingOpenAiKey_showsProviderSpecificConfirmation() {
-        val viewModel = SettingsViewModel(FakeAiSettingsStore())
+        val viewModel = SettingsViewModel(FakeAiSettingsStore(AiProvider.CLAUDE))
         composeTestRule.setContent {
             SettingsScreen(viewModel = viewModel)
         }

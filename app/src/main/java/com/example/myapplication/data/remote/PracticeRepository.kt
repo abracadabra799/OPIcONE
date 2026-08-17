@@ -26,14 +26,19 @@ class DefaultPracticeRepository(
         questionCount: Int
     ): Result<List<PracticeQuestion>> = try {
         val selected = settingsStore.getSelectedProvider()
-        val key = settingsStore.getApiKey(selected)?.takeIf(String::isNotBlank)
-            ?: throw MissingApiKey(selected)
+        val key = if (selected.requiresApiKey) {
+            settingsStore.getApiKey(selected)?.takeIf(String::isNotBlank)
+                ?: throw MissingApiKey(selected)
+        } else {
+            settingsStore.getApiKey(selected)
+        }
         val provider = checkNotNull(providersById[selected]) {
             "Provider not configured: ${selected.name}"
         }
 
         val accepted = mutableListOf<PracticeQuestion>()
         val acceptedNormalized = linkedSetOf<String>()
+        val fallbackCandidates = mutableListOf<PracticeQuestion>()
 
         repeat(MAX_GENERATION_CALLS) { attempt ->
             val promptHistory = sessionStore.askedQuestions() +
@@ -51,10 +56,13 @@ class DefaultPracticeRepository(
 
             for (question in parsed) {
                 val normalized = normalizeQuestion(question.opicQuestion)
-                if (!sessionStore.containsQuestion(question.opicQuestion) &&
-                    acceptedNormalized.add(normalized)
-                ) {
-                    accepted += question
+                if (acceptedNormalized.add(normalized)) {
+                    if (!sessionStore.containsQuestion(question.opicQuestion)) {
+                        accepted += question
+                    } else {
+                        fallbackCandidates += question
+                    }
+
                     if (accepted.size == questionCount) {
                         sessionStore.addAskedQuestions(
                             accepted.map(PracticeQuestion::opicQuestion)
@@ -65,7 +73,20 @@ class DefaultPracticeRepository(
             }
         }
 
-        throw InsufficientUniqueQuestions()
+        // When unseen questions in session are exhausted, fill from distinct candidates with fresh script variations
+        for (fallback in fallbackCandidates) {
+            if (accepted.size == questionCount) break
+            accepted += fallback
+        }
+
+        if (accepted.size == questionCount) {
+            sessionStore.addAskedQuestions(
+                accepted.map(PracticeQuestion::opicQuestion)
+            )
+            Result.success(accepted.toList())
+        } else {
+            throw InsufficientUniqueQuestions()
+        }
     } catch (e: CancellationException) {
         throw e
     } catch (e: Exception) {

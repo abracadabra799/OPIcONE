@@ -2,7 +2,9 @@ package com.example.myapplication.ui.set
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.myapplication.audio.SpeakingEvaluator
 import com.example.myapplication.audio.SpeechPlayer
+import com.example.myapplication.audio.SpeechToTextEngine
 import com.example.myapplication.audio.VoicePlayer
 import com.example.myapplication.audio.VoiceRecorder
 import com.example.myapplication.data.local.FavoriteRepository
@@ -18,7 +20,6 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -33,7 +34,8 @@ class PracticeSetViewModel(
     private val voiceRecorder: VoiceRecorder,
     private val voicePlayer: VoicePlayer,
     private val recordingFile: File,
-    private val sessionStore: PracticeSessionStore
+    private val sessionStore: PracticeSessionStore,
+    private val speechToTextEngine: SpeechToTextEngine? = null
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<PracticeSetUiState>(PracticeSetUiState.Loading)
@@ -64,7 +66,8 @@ class PracticeSetViewModel(
                     hasRecording = false,
                     favoriteQuestionKeys = favoriteQuestionKeys,
                     speechAvailability = speechPlayer.availability.value,
-                    isSetComplete = false
+                    isSetComplete = false,
+                    evaluationResult = null
                 )
             }.onFailure { error ->
                 _uiState.value = PracticeSetUiState.Error(
@@ -78,13 +81,28 @@ class PracticeSetViewModel(
     fun startRecording() {
         val current = _uiState.value as? PracticeSetUiState.Ready ?: return
         voiceRecorder.startRecording(recordingFile)
-        _uiState.value = current.copy(isRecording = true)
+        speechToTextEngine?.startListening(
+            onResult = { text ->
+                val ready = _uiState.value as? PracticeSetUiState.Ready ?: return@startListening
+                val currentQuestion = ready.questions[ready.currentIndex]
+                val eval = SpeakingEvaluator.evaluate(text, currentQuestion.englishSentence)
+                _uiState.value = ready.copy(evaluationResult = eval)
+            },
+            onError = { _ -> }
+        )
+        _uiState.value = current.copy(isRecording = true, isAnswerRevealed = true, evaluationResult = null)
     }
 
     fun stopRecording() {
         val current = _uiState.value as? PracticeSetUiState.Ready ?: return
         voiceRecorder.stopRecording()
-        _uiState.value = current.copy(isRecording = false, hasRecording = true)
+        speechToTextEngine?.stopListening()
+        _uiState.value = current.copy(isRecording = false, hasRecording = true, isAnswerRevealed = true)
+    }
+
+    fun revealAnswer() {
+        val current = _uiState.value as? PracticeSetUiState.Ready ?: return
+        _uiState.value = current.copy(isAnswerRevealed = true)
     }
 
     fun playMyRecording() {
@@ -124,6 +142,7 @@ class PracticeSetViewModel(
         if (voiceRecorder.isRecording()) {
             voiceRecorder.stopRecording()
         }
+        speechToTextEngine?.stopListening()
         voicePlayer.stop()
         recordingFile.delete()
     }
@@ -143,18 +162,27 @@ class PracticeSetViewModel(
                     }
                 )
             )
-            _uiState.value = current.copy(isSetComplete = true, isRecording = false, hasRecording = false)
+            _uiState.value = current.copy(
+                isSetComplete = true,
+                isRecording = false,
+                hasRecording = false,
+                isAnswerRevealed = false,
+                evaluationResult = null
+            )
             return
         }
         _uiState.value = current.copy(
             currentIndex = nextIndex,
             isRecording = false,
-            hasRecording = false
+            hasRecording = false,
+            isAnswerRevealed = false,
+            evaluationResult = null
         )
     }
 
     override fun onCleared() {
         speechPlayer.release()
+        speechToTextEngine?.release()
         stopRecordingResources()
     }
 }
